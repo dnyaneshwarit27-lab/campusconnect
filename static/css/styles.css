@@ -47,6 +47,14 @@
 }
 
 /* Global Reset & Base */
+html {
+    scroll-behavior: smooth;
+}
+
+#events-section {
+    scroll-margin-top: 90px;
+}
+
 body {
     font-family: var(--font-body);
     background-color: var(--bg-dark);

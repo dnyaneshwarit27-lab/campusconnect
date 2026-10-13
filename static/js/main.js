@@ -27,7 +27,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    // Smooth scroll for nav links targeting #events-section on current page
+    document.querySelectorAll('a[href*="#events-section"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            const currentPath = window.location.pathname;
+            const targetUrl = new URL(this.href, window.location.origin);
+            if (targetUrl.pathname === currentPath && targetUrl.search === window.location.search) {
+                const targetEl = document.getElementById('events-section');
+                if (targetEl) {
+                    e.preventDefault();
+                    targetEl.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+        });
+    });
 });
+
 
 // Audio Feedback Synthesizer using Web Audio API (Zero external MP3 dependency)
 class FeedbackAudio {
