@@ -1,0 +1,399 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ event.title }} — CampusConnect{% endblock %}
+
+{% block content %}
+<!-- Event Header Banner -->
+<section class="position-relative py-5" style="background: {{ event.banner_gradient }};">
+    <div class="position-absolute inset-0 bg-dark opacity-75"></div>
+    <div class="container position-relative py-4" style="z-index: 1;">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-8">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                    <span class="badge bg-black bg-opacity-60 text-white border border-white border-opacity-25 px-3 py-2 rounded-pill">
+                        <i class="bi {{ event.category.icon }} me-1"></i> {{ event.category.name }}
+                    </span>
+                    <span class="badge {% if event.event_mode == 'OFFLINE' %}bg-success{% elif event.event_mode == 'ONLINE' %}bg-info{% else %}bg-warning text-dark{% endif %} px-3 py-2 rounded-pill">
+                        {% if event.event_mode == 'OFFLINE' %}<i class="bi bi-geo-alt-fill me-1"></i> In-Person Venue{% elif event.event_mode == 'ONLINE' %}<i class="bi bi-camera-video-fill me-1"></i> Online / Virtual{% else %}<i class="bi bi-hdd-network-fill me-1"></i> Hybrid{% endif %}
+                    </span>
+                    {% if event.is_team_event %}
+                        <span class="badge bg-primary px-3 py-2 rounded-pill">
+                            <i class="bi bi-people-fill me-1"></i> Team Event ({{ event.min_team_size }}-{{ event.max_team_size }} Members)
+                        </span>
+                    {% else %}
+                        <span class="badge bg-secondary px-3 py-2 rounded-pill">
+                            <i class="bi bi-person-fill me-1"></i> Individual Participation
+                        </span>
+                    {% endif %}
+                </div>
+
+                <h1 class="display-5 fw-bold text-white mb-3">{{ event.title }}</h1>
+                <p class="lead text-white-50 mb-4">{{ event.short_description }}</p>
+
+                <!-- Quick Meta Pills -->
+                <div class="d-flex flex-wrap gap-3 text-white small">
+                    <div class="d-flex align-items-center gap-2 bg-black bg-opacity-40 px-3 py-2 rounded-3 border border-white border-opacity-10">
+                        <i class="bi bi-calendar3 text-primary-light fs-5"></i>
+                        <div>
+                            <div class="text-white-50" style="font-size: 0.72rem;">DATE & TIME</div>
+                            <div class="fw-semibold">{{ event.start_date|date:"M d, Y" }} · {{ event.start_date|date:"g:i A" }}</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2 bg-black bg-opacity-40 px-3 py-2 rounded-3 border border-white border-opacity-10">
+                        <i class="bi bi-geo-alt-fill text-danger fs-5"></i>
+                        <div>
+                            <div class="text-white-50" style="font-size: 0.72rem;">VENUE</div>
+                            <div class="fw-semibold">{{ event.venue }}</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2 bg-black bg-opacity-40 px-3 py-2 rounded-3 border border-white border-opacity-10">
+                        <i class="bi bi-building text-info fs-5"></i>
+                        <div>
+                            <div class="text-white-50" style="font-size: 0.72rem;">HOST COLLEGE</div>
+                            <div class="fw-semibold">{{ event.college_name }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Share & Poster QR Mini Card -->
+            <div class="col-lg-4 text-lg-end">
+                <div class="glass-card p-4 d-inline-block text-start w-100" style="max-width: 360px;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="fw-bold text-white"><i class="bi bi-qr-code text-primary me-2"></i> Event Poster QR</span>
+                        <button class="btn btn-sm btn-glass py-1 px-2" data-bs-toggle="modal" data-bs-target="#posterQRModal">
+                            <i class="bi bi-arrows-fullscreen"></i> Enlarge
+                        </button>
+                    </div>
+                    <div class="text-center p-3 rounded-3 bg-white mb-3">
+                        <img src="{{ poster_qr_base64 }}" alt="Event QR" class="img-fluid" style="max-width: 170px;">
+                    </div>
+                    <div class="small text-white-50 text-center mb-2">
+                        Scan with phone to open this event or print on campus posters!
+                    </div>
+                    <button class="btn btn-glass btn-sm w-100 py-2" data-copy-target="{{ event_url }}">
+                        <i class="bi bi-link-45deg me-1"></i> Copy Event Link
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Main Details & Registration Container -->
+<div class="container my-5">
+    <div class="row g-5">
+        <!-- Left Column: Overview, Agenda, Rules, Announcements, Q&A -->
+        <div class="col-lg-8">
+
+            <!-- Announcements Section (If Any) -->
+            {% if announcements %}
+                <div class="mb-5">
+                    <h4 class="text-white fw-bold mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-megaphone-fill text-warning"></i> Coordinator Announcements
+                    </h4>
+                    <div class="d-flex flex-column gap-3">
+                        {% for notice in announcements %}
+                            <div class="p-4 rounded-4 glass-card {% if notice.is_urgent %}border-warning border-opacity-40{% endif %}">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="fw-bold text-white mb-0">
+                                        {% if notice.is_urgent %}
+                                            <span class="badge bg-warning text-dark me-2">URGENT</span>
+                                        {% endif %}
+                                        {{ notice.title }}
+                                    </h6>
+                                    <span class="text-white-50 small">{{ notice.created_at|timesince }} ago</span>
+                                </div>
+                                <p class="text-white-50 small mb-0">{{ notice.content|linebreaks }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Event Description & Agenda -->
+            <div class="glass-card p-4 p-md-5 mb-5">
+                <h4 class="text-white fw-bold mb-4 d-flex align-items-center gap-2">
+                    <i class="bi bi-info-circle text-primary"></i> Event Description & Agenda
+                </h4>
+                <div class="text-light" style="line-height: 1.8; white-space: pre-line;">
+                    {{ event.description }}
+                </div>
+            </div>
+
+            <!-- Rules, Guidelines & Eligibility -->
+            <div class="glass-card p-4 p-md-5 mb-5">
+                <h4 class="text-white fw-bold mb-4 d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-check text-success"></i> Rules & Eligibility
+                </h4>
+                
+                <div class="mb-4">
+                    <h6 class="text-white-50 text-uppercase small fw-bold">Eligibility Criteria</h6>
+                    <p class="text-white">{{ event.eligibility }}</p>
+                </div>
+
+                <div>
+                    <h6 class="text-white-50 text-uppercase small fw-bold">Competition Rules & Code of Conduct</h6>
+                    <div class="text-white-50 small" style="line-height: 1.8; white-space: pre-line;">
+                        {{ event.rules }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coordinator Q&A / Ask Coordinator Section -->
+            <div class="glass-card p-4 p-md-5 mb-5">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="text-white fw-bold mb-1 d-flex align-items-center gap-2">
+                            <i class="bi bi-chat-quote text-info"></i> Ask Coordinator Q&A
+                        </h4>
+                        <p class="text-white-50 small mb-0">Got doubts about team size, laptops, or fees? Ask the coordinator below.</p>
+                    </div>
+                </div>
+
+                <!-- Ask Question Form -->
+                {% if user.is_authenticated %}
+                    <form method="POST" action="{% url 'ask_question' event.slug %}" class="mb-4 p-3 rounded-3 bg-dark border border-secondary border-opacity-25">
+                        {% csrf_token %}
+                        <label class="form-label text-white small fw-bold mb-2">Have a question for the coordinator?</label>
+                        <div class="input-group">
+                            <input type="text" name="question" class="form-control form-control-custom" 
+                                   placeholder="e.g. Is it mandatory to bring our own laptops? Can 1st year students participate?" required>
+                            <button type="submit" class="btn btn-primary-custom px-4">
+                                <i class="bi bi-send"></i> Send
+                            </button>
+                        </div>
+                    </form>
+                {% else %}
+                    <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-25 mb-4 text-center">
+                        <span class="text-white-50 small">Have questions about this event? </span>
+                        <a href="{% url 'login' %}?next={{ request.path }}" class="text-primary fw-bold text-decoration-none">Log in to ask the coordinator</a>
+                    </div>
+                {% endif %}
+
+                <!-- Answered Questions List -->
+                {% if questions %}
+                    <div class="d-flex flex-column gap-3">
+                        {% for q in questions %}
+                            <div class="p-3 rounded-3" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-white fw-semibold small">
+                                        <i class="bi bi-question-circle text-warning me-1"></i> {{ q.question }}
+                                    </span>
+                                    <span class="text-white-50 small" style="font-size: 0.75rem;">by {{ q.student.username }}</span>
+                                </div>
+                                {% if q.answer %}
+                                    <div class="p-3 rounded-3 ms-3" style="background: rgba(99, 102, 241, 0.08); border-left: 3px solid #6366f1;">
+                                        <div class="small text-info fw-semibold mb-1">
+                                            <i class="bi bi-patch-check-fill me-1"></i> Answer from Coordinator:
+                                        </div>
+                                        <div class="small text-white-50">{{ q.answer }}</div>
+                                    </div>
+                                {% else %}
+                                    <div class="ms-3 small text-white-50 fst-italic">
+                                        <i class="bi bi-hourglass me-1"></i> Awaiting coordinator review...
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-3 text-white-50 small">
+                        No public questions yet. Be the first to ask the coordinator!
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right Column: Registration Card & Coordinator Profile -->
+        <div class="col-lg-4" id="register-box">
+            <div class="sticky-top" style="top: 90px; z-index: 10;">
+                
+                <!-- Registration Status Card -->
+                <div class="glass-card p-4 mb-4">
+                    {% if user_registration %}
+                        <!-- User Is Already Registered -->
+                        <div class="text-center p-3 rounded-4 mb-3 border border-success border-opacity-30" style="background: rgba(16, 185, 129, 0.1);">
+                            <div class="fs-1 text-success mb-2">
+                                <i class="bi bi-check-circle-fill"></i>
+                            </div>
+                            <h5 class="text-white fw-bold">You Are Registered!</h5>
+                            <p class="text-white-50 small mb-3">Your spot is confirmed. Show your QR pass at the entrance on event day.</p>
+                            
+                            <a href="{% url 'ticket_pass' user_registration.registration_token %}" class="btn btn-primary-custom w-100 py-2 mb-2">
+                                <i class="bi bi-qr-code me-2"></i> View Digital QR Pass
+                            </a>
+
+                            {% if user_registration.is_checked_in %}
+                                <a href="{% url 'certificate_view' user_registration.registration_token %}" class="btn btn-glass w-100 py-2 text-warning">
+                                    <i class="bi bi-award-fill me-1"></i> Download Certificate
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <!-- Not Registered Yet -->
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-white-50 small">Registration Fee:</span>
+                            <span class="fs-4 fw-bold {% if event.registration_fee == 0 %}text-success{% else %}text-white{% endif %}">
+                                {% if event.registration_fee == 0 %}FREE{% else %}₹{{ event.registration_fee }}{% endif %}
+                            </span>
+                        </div>
+
+                        <!-- Capacity Bar -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center small text-white-50 mb-1">
+                                <span>Availability</span>
+                                <span class="{% if event.seats_left <= 10 %}text-danger fw-bold{% else %}text-success{% endif %}">
+                                    {{ event.seats_left }} / {{ event.capacity }} spots left
+                                </span>
+                            </div>
+                            <div class="progress" style="height: 8px; background: rgba(255,255,255,0.08);">
+                                <div class="progress-bar {% if event.seats_left <= 10 %}bg-danger{% else %}bg-primary{% endif %}" 
+                                     style="width: {{ event.confirmed_registrations_count|stringformat:'f' }}%;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4 small text-white-50">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <i class="bi bi-clock-history text-warning"></i>
+                                <span>Deadline: <strong>{{ event.registration_deadline|date:"M d, Y · g:i A" }}</strong></span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-shield-check text-info"></i>
+                                <span>Generates instant secure QR attendance ticket</span>
+                            </div>
+                        </div>
+
+                        {% if event.is_registration_open %}
+                            {% if user.is_authenticated %}
+                                <button type="button" class="btn btn-primary-custom w-100 py-3 fs-6" data-bs-toggle="modal" data-bs-target="#registerModal">
+                                    <i class="bi bi-ticket-perforated-fill me-2"></i> Register Now
+                                </button>
+                            {% else %}
+                                <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary-custom w-100 py-3 fs-6">
+                                    <i class="bi bi-box-arrow-in-right me-2"></i> Log In to Register
+                                </a>
+                            {% endif %}
+                        {% else %}
+                            <button class="btn btn-secondary w-100 py-3 disabled opacity-50" disabled>
+                                Registration Closed
+                            </button>
+                        {% endif %}
+                    {% endif %}
+                </div>
+
+                <!-- Coordinator Contact Card -->
+                <div class="glass-card p-4">
+                    <h6 class="text-white fw-bold mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-person-badge text-primary"></i> Event Coordinator
+                    </h6>
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" 
+                             style="width: 48px; height: 48px; background: {{ event.coordinator.profile.avatar_color|default:'#8b5cf6' }};">
+                            {{ event.coordinator_name|slice:":1"|upper }}
+                        </div>
+                        <div>
+                            <div class="text-white fw-bold">{{ event.coordinator_name }}</div>
+                            <div class="text-white-50 small">{{ event.department }}</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column gap-2 small text-white-50">
+                        {% if event.coordinator_email %}
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-envelope text-primary-light"></i>
+                                <a href="mailto:{{ event.coordinator_email }}" class="text-white-50 text-decoration-none hover-white">{{ event.coordinator_email }}</a>
+                            </div>
+                        {% endif %}
+                        {% if event.coordinator_phone %}
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-telephone text-success"></i>
+                                <span>{{ event.coordinator_phone }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Registration Modal -->
+<div class="modal fade" id="registerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-secondary border-opacity-25" style="background: #111827;">
+            <div class="modal-header border-secondary border-opacity-10">
+                <h5 class="modal-title text-white fw-bold">
+                    <i class="bi bi-ticket-perforated text-primary me-2"></i> Confirm Registration
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{% url 'register_event' event.slug %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="p-3 rounded-3 mb-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
+                        <div class="text-white fw-bold">{{ event.title }}</div>
+                        <div class="text-white-50 small">{{ event.venue }} · {{ event.start_date|date:"M d, Y" }}</div>
+                        <div class="text-success small mt-1"><i class="bi bi-check2"></i> Registered to: {{ user.get_full_name|default:user.username }} ({{ user.email }})</div>
+                    </div>
+
+                    {% if event.is_team_event %}
+                        <div class="mb-3">
+                            <label class="form-label text-white small fw-bold">Team Name *</label>
+                            <input type="text" name="team_name" class="form-control form-control-custom" placeholder="e.g. CodeCrafters" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-white small fw-bold">Team Members Roster (Optional)</label>
+                            <textarea name="team_members_info" class="form-control form-control-custom" rows="3" 
+                                      placeholder="List member names and emails (up to {{ event.max_team_size }} total)"></textarea>
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label class="form-label text-white small fw-bold">Special Requests / Notes (Optional)</label>
+                        <input type="text" name="notes" class="form-control form-control-custom" placeholder="e.g. Dietary preference, hardware requirements...">
+                    </div>
+
+                    <div class="small text-white-50 p-2 rounded-2" style="background: rgba(99, 102, 241, 0.1);">
+                        <i class="bi bi-info-circle text-primary me-1"></i> A personalized scannable QR Entry Pass with security hash will be issued upon registration.
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary border-opacity-10">
+                    <button type="button" class="btn btn-glass" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-custom">
+                        <i class="bi bi-check-lg"></i> Confirm & Get QR Pass
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Poster QR Modal -->
+<div class="modal fade" id="posterQRModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-secondary border-opacity-25 text-center p-4" style="background: #111827;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title text-white fw-bold mx-auto">
+                    <i class="bi bi-qr-code text-primary me-2"></i> {{ event.title }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white position-absolute end-0 top-0 m-3" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-white-50 small mb-3">Notice Board & Classroom Poster QR Code</p>
+                <div class="p-3 rounded-4 bg-white d-inline-block shadow-lg mb-3">
+                    <img src="{{ poster_qr_base64 }}" alt="Event Poster QR" class="img-fluid" style="width: 260px; height: 260px;">
+                </div>
+                <div class="small text-white-50 mb-3">{{ event_url }}</div>
+                <button class="btn btn-primary-custom" data-copy-target="{{ event_url }}">
+                    <i class="bi bi-clipboard"></i> Copy Link
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

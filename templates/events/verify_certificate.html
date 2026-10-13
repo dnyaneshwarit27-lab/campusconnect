@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Verify Certificate — CampusConnect{% endblock %}
+
+{% block content %}
+<div class="container py-5 text-center">
+    <div class="glass-card p-4 p-md-5 max-w-xl mx-auto">
+        {% if is_valid %}
+            <div class="p-3 rounded-circle bg-success bg-opacity-20 text-success d-inline-flex mb-3">
+                <i class="bi bi-patch-check-fill display-4"></i>
+            </div>
+            <h3 class="text-white fw-bold mb-2">Authentic Verified Credential</h3>
+            <p class="text-success small fw-semibold text-uppercase letter-spacing-1 mb-4">
+                Verified by {{ event.college_name }} & CampusConnect
+            </p>
+
+            <div class="p-4 rounded-4 bg-dark border border-secondary border-opacity-25 text-start mb-4">
+                <div class="mb-3 pb-2 border-bottom border-secondary border-opacity-10">
+                    <span class="text-white-50 small d-block">RECIPIENT NAME</span>
+                    <strong class="text-white fs-5">{{ registration.user.get_full_name|default:registration.user.username }}</strong>
+                </div>
+                <div class="mb-3 pb-2 border-bottom border-secondary border-opacity-10">
+                    <span class="text-white-50 small d-block">EVENT TITLE</span>
+                    <strong class="text-white fs-6">{{ event.title }}</strong>
+                </div>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <span class="text-white-50 small d-block">EVENT DATE</span>
+                        <span class="text-white small">{{ event.start_date|date:"F d, Y" }}</span>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-white-50 small d-block">VENUE / MODE</span>
+                        <span class="text-white small">{{ event.venue }} ({{ event.event_mode }})</span>
+                    </div>
+                    <div class="col-6 mt-2">
+                        <span class="text-white-50 small d-block">CHECK-IN VERIFIED AT</span>
+                        <span class="text-white small">{{ registration.checked_in_at|date:"M d, Y · g:i A" }}</span>
+                    </div>
+                    <div class="col-6 mt-2">
+                        <span class="text-white-50 small d-block">CREDENTIAL HASH</span>
+                        <span class="text-white-50 small font-monospace">{{ registration.pass_token_short }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <a href="{% url 'event_detail' event.slug %}" class="btn btn-primary-custom w-100">
+                View Event Page
+            </a>
+        {% else %}
+            <div class="p-3 rounded-circle bg-danger bg-opacity-20 text-danger d-inline-flex mb-3">
+                <i class="bi bi-x-circle-fill display-4"></i>
+            </div>
+            <h3 class="text-white fw-bold mb-2">Unverified Certificate</h3>
+            <p class="text-white-50 small mb-4">This registration has not been verified for physical attendance by the event coordinator.</p>
+            <a href="{% url 'home' %}" class="btn btn-glass">Return to Home</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

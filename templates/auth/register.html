@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Account — CampusConnect{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="max-w-xl mx-auto">
+        <div class="text-center mb-4">
+            <span class="brand-badge fs-4 p-2 px-3 mb-3 d-inline-block"><i class="bi bi-qr-code-scan"></i></span>
+            <h3 class="text-white fw-bold">Join CampusConnect</h3>
+            <p class="text-white-50 small">Register as a student to participate or as a coordinator to host events.</p>
+        </div>
+
+        <div class="glass-card p-4 p-md-5">
+            <form method="POST" action="{% url 'register' %}">
+                {% csrf_token %}
+
+                <!-- Role Selection -->
+                <div class="mb-4">
+                    <label class="form-label text-white small fw-bold mb-2">Select Your Role *</label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <input type="radio" class="btn-check" name="role" id="roleStudent" value="STUDENT" checked>
+                            <label class="btn btn-glass w-100 py-3 text-center" for="roleStudent">
+                                <i class="bi bi-mortarboard-fill d-block fs-3 mb-1 text-primary"></i>
+                                <span class="fw-bold d-block text-white">Student</span>
+                                <span class="text-white-50 small" style="font-size: 0.72rem;">Browse, Register & Attend</span>
+                            </label>
+                        </div>
+                        <div class="col-6">
+                            <input type="radio" class="btn-check" name="role" id="roleCoordinator" value="COORDINATOR">
+                            <label class="btn btn-glass w-100 py-3 text-center" for="roleCoordinator">
+                                <i class="bi bi-person-badge-fill d-block fs-3 mb-1 text-info"></i>
+                                <span class="fw-bold d-block text-white">Coordinator</span>
+                                <span class="text-white-50 small" style="font-size: 0.72rem;">Create Events & Scan Passes</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-white small fw-bold">First Name *</label>
+                        <input type="text" name="first_name" class="form-control form-control-custom" placeholder="e.g. Aarav" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-white small fw-bold">Last Name *</label>
+                        <input type="text" name="last_name" class="form-control form-control-custom" placeholder="e.g. Sharma" required>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-white small fw-bold">Username *</label>
+                        <input type="text" name="username" class="form-control form-control-custom" placeholder="e.g. aarav_sharma" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-white small fw-bold">College Email *</label>
+                        <input type="email" name="email" class="form-control form-control-custom" placeholder="aarav@college.edu" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-white small fw-bold">College / University Name *</label>
+                    <input type="text" name="college" class="form-control form-control-custom" value="Apex Institute of Technology" required>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-white small fw-bold">Department / Major *</label>
+                        <input type="text" name="department" class="form-control form-control-custom" value="Computer Science & Engineering" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-white small fw-bold">Year of Study</label>
+                        <select name="year_of_study" class="form-select form-select-custom">
+                            <option value="1st Year">1st Year (Freshman)</option>
+                            <option value="2nd Year">2nd Year (Sophomore)</option>
+                            <option value="3rd Year" selected>3rd Year (Junior)</option>
+                            <option value="4th Year">4th Year (Senior)</option>
+                            <option value="Postgraduate">Postgraduate (Masters/PhD)</option>
+                            <option value="Faculty / Staff">Faculty / Staff Coordinator</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label text-white small fw-bold">Phone Number</label>
+                        <input type="text" name="phone" class="form-control form-control-custom" placeholder="+91 98765 43210">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-white small fw-bold">Create Password *</label>
+                        <input type="password" name="password" class="form-control form-control-custom" placeholder="••••••••" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary-custom w-100 py-3 fs-6">
+                    Create Account & Continue
+                </button>
+            </form>
+
+            <div class="mt-4 pt-3 text-center border-top border-secondary border-opacity-10 small text-white-50">
+                Already registered? 
+                <a href="{% url 'login' %}" class="text-primary-light fw-bold text-decoration-none">Log In Here</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block title %}VIP Pass — {{ event.title }} | CampusConnect{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Back Navigation Ribbon -->
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+        <a href="{% url 'event_detail' event.slug %}" class="btn btn-glass btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Back to Event Details
+        </a>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-glass btn-sm">
+                <i class="bi bi-printer me-1"></i> Print / Save Pass
+            </button>
+            {% if registration.is_checked_in %}
+                <a href="{% url 'certificate_view' registration.registration_token %}" class="btn btn-primary-custom btn-sm">
+                    <i class="bi bi-award me-1"></i> View Certificate
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- The Ticket Card (Boarding Pass / Credential Layout) -->
+    <div class="ticket-container">
+        <div class="ticket-pass-card">
+            
+            <!-- Ticket Top Header -->
+            <div class="ticket-header text-white" style="background: {{ event.banner_gradient }};">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="p-1 px-2 rounded-2 bg-black bg-opacity-40 small fw-bold">
+                            <i class="bi bi-qr-code-scan text-info me-1"></i> CAMPUSCONNECT PASS
+                        </span>
+                        <span class="badge bg-black bg-opacity-40 text-white-50 small">
+                            {{ event.event_mode }}
+                        </span>
+                    </div>
+                    <span class="badge bg-white text-dark fw-bold px-3 py-1 rounded-pill small">
+                        PASS #{{ registration.pass_token_short }}
+                    </span>
+                </div>
+
+                <h3 class="fw-bold mb-1">{{ event.title }}</h3>
+                <div class="text-white-50 small">{{ event.college_name }} · {{ event.department }}</div>
+            </div>
+
+            <!-- Tear Line with Left & Right Cutout Notches -->
+            <div class="ticket-notch-row">
+                <div class="ticket-notch-left"></div>
+                <div class="ticket-divider-line"></div>
+                <div class="ticket-notch-right"></div>
+            </div>
+
+            <!-- Ticket Body -->
+            <div class="ticket-body">
+                <div class="row align-items-center g-4">
+                    <!-- QR Code Side -->
+                    <div class="col-md-5 text-center">
+                        <div class="ticket-qr-box mb-2">
+                            <img src="{{ qr_base64 }}" alt="Registration QR Code" class="img-fluid">
+                        </div>
+                        <div class="small text-white-50" style="font-family: var(--font-mono); font-size: 0.75rem;">
+                            TOKEN: {{ registration.registration_token }}
+                        </div>
+                    </div>
+
+                    <!-- Attendee & Event Info Side -->
+                    <div class="col-md-7">
+                        <!-- Attendance Status Ribbon -->
+                        <div class="mb-4">
+                            {% if registration.is_checked_in %}
+                                <div class="p-3 rounded-3 border border-success border-opacity-40 d-flex align-items-center gap-3" 
+                                     style="background: rgba(16, 185, 129, 0.15);">
+                                    <i class="bi bi-patch-check-fill text-success fs-3"></i>
+                                    <div>
+                                        <div class="text-success fw-bold small text-uppercase">Attendance Verified</div>
+                                        <div class="text-white-50 small">
+                                            Checked in on {{ registration.checked_in_at|date:"M d, Y" }} at {{ registration.checked_in_at|date:"g:i A" }}
+                                            {% if registration.checked_in_by %}by {{ registration.checked_in_by.first_name|default:registration.checked_in_by.username }}{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="p-3 rounded-3 border border-warning border-opacity-40 d-flex align-items-center gap-3" 
+                                     style="background: rgba(245, 158, 11, 0.1);">
+                                    <i class="bi bi-qr-code text-warning fs-3"></i>
+                                    <div>
+                                        <div class="text-warning fw-bold small text-uppercase">Pending Venue Check-In</div>
+                                        <div class="text-white-50 small">Show this QR code to the coordinator desk at the entrance.</div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Attendee Details Grid -->
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="text-white-50 small" style="font-size: 0.72rem;">ATTENDEE NAME</div>
+                                <div class="text-white fw-bold">{{ registration.user.get_full_name|default:registration.user.username }}</div>
+                            </div>
+
+                            <div class="col-6">
+                                <div class="text-white-50 small" style="font-size: 0.72rem;">INSTITUTION</div>
+                                <div class="text-white fw-bold text-truncate">{{ registration.user.profile.college|default:"Apex Institute" }}</div>
+                            </div>
+
+                            {% if registration.team_name %}
+                                <div class="col-6">
+                                    <div class="text-white-50 small" style="font-size: 0.72rem;">TEAM NAME</div>
+                                    <div class="text-info fw-bold">{{ registration.team_name }}</div>
+                                </div>
+                            {% endif %}
+
+                            <div class="col-6">
+                                <div class="text-white-50 small" style="font-size: 0.72rem;">DATE & TIME</div>
+                                <div class="text-white fw-semibold">{{ event.start_date|date:"D, M d" }} · {{ event.start_date|date:"g:i A" }}</div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="text-white-50 small" style="font-size: 0.72rem;">VENUE & LOCATION</div>
+                                <div class="text-white fw-semibold"><i class="bi bi-geo-alt-fill text-danger me-1"></i> {{ event.venue }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Security Notice -->
+                        <div class="mt-4 pt-3 border-top border-secondary border-opacity-10 d-flex align-items-center justify-content-between text-white-50 small">
+                            <span><i class="bi bi-shield-lock text-success me-1"></i> Tamper-proof UUID Token</span>
+                            <span class="text-muted">Single-use admittance</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ticket Footer Notice -->
+            <div class="p-3 bg-black bg-opacity-40 text-center text-white-50 small border-top border-secondary border-opacity-10">
+                Please bring a valid college student ID card along with this digital pass to the event.
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

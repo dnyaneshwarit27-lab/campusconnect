@@ -1,0 +1,319 @@
+{% extends 'base.html' %}
+
+{% block title %}Live QR Attendance Scanner — {{ event.title }} | CampusConnect{% endblock %}
+
+{% block extra_head %}
+<!-- HTML5 QR Code CDN -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <a href="{% url 'coordinator_manage_event' event.slug %}" class="text-white-50 small text-decoration-none mb-2 d-inline-block hover-white">
+                <i class="bi bi-arrow-left me-1"></i> Back to Event Roster
+            </a>
+            <h2 class="text-white fw-bold mb-1">
+                <i class="bi bi-qr-code-scan text-primary me-2"></i> Live Attendance QR Scanner
+            </h2>
+            <p class="text-white-50 small mb-0">{{ event.title }} · {{ event.venue }}</p>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <div class="p-2 px-3 rounded-3 glass-card text-center">
+                <span class="text-white-50 small d-block">CHECKED IN</span>
+                <span class="fs-5 fw-bold text-success" id="stat-checked-in">{{ event.checked_in_count }}</span>
+                <span class="text-white-50 small"> / <span id="stat-total">{{ event.confirmed_registrations_count }}</span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left: Scanner Viewport & Controls -->
+        <div class="col-lg-7">
+            <div class="glass-card p-4 text-center">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="fw-bold text-white"><i class="bi bi-camera-video text-primary me-2"></i> Camera Feed</span>
+                    <div class="d-flex gap-2">
+                        <button id="btn-start-camera" class="btn btn-sm btn-primary-custom py-1 px-3">
+                            <i class="bi bi-camera"></i> Start Camera
+                        </button>
+                        <button id="btn-stop-camera" class="btn btn-sm btn-glass py-1 px-3 d-none">
+                            <i class="bi bi-camera-video-off"></i> Stop Camera
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Video Viewport with Radar Scanner Line -->
+                <div class="scanner-viewport-wrapper mb-3" id="scanner-box">
+                    <div id="qr-reader" style="width: 100%; min-height: 320px;"></div>
+                    <div class="scanner-radar-line" id="radar-line" style="display: none;"></div>
+                </div>
+
+                <div class="text-white-50 small mb-4">
+                    Position student's digital QR pass inside the viewfinder. Detection and verification is automatic.
+                </div>
+
+                <!-- Manual Token Entry Fallback -->
+                <div class="pt-3 border-top border-secondary border-opacity-10 text-start">
+                    <label class="form-label text-white small fw-bold mb-2">
+                        <i class="bi bi-keyboard text-info me-1"></i> Manual Token Lookup Fallback
+                    </label>
+                    <form id="manual-scan-form" class="d-flex gap-2">
+                        <input type="text" id="manual-token-input" class="form-control form-control-custom" 
+                               placeholder="Paste UUID token or pass hash (e.g. 550e8400-e29b-41d4-a716-446655440000)" required>
+                        <button type="submit" class="btn btn-primary-custom text-nowrap px-4">
+                            <i class="bi bi-check-lg"></i> Verify Code
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Real-time Scan Result Panel & Session Log -->
+        <div class="col-lg-5">
+            <!-- Active Result Box -->
+            <div class="glass-card p-4 mb-4" id="scan-result-card" style="border: 2px solid rgba(255,255,255,0.08);">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="text-white fw-bold mb-0">Verification Result</h5>
+                    <span class="badge bg-secondary small" id="scan-status-badge">Standby</span>
+                </div>
+
+                <!-- Result Content Details -->
+                <div id="result-placeholder" class="text-center py-5 text-white-50">
+                    <i class="bi bi-upc-scan display-4 mb-2 d-block opacity-50"></i>
+                    <p class="small mb-0">Awaiting scan... Present a student QR pass to verify registration.</p>
+                </div>
+
+                <div id="result-success-content" class="d-none">
+                    <div class="p-3 rounded-4 mb-3 border border-success border-opacity-40" style="background: rgba(16, 185, 129, 0.12);">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                            <span class="text-success fw-bold text-uppercase small">Attendance Marked Successfully!</span>
+                        </div>
+                        <h4 class="text-white fw-bold mb-1" id="res-student-name">Student Name</h4>
+                        <div class="text-white-50 small" id="res-student-dept">CS Department · Apex Institute</div>
+                        <div class="text-info small mt-1 d-none" id="res-team-box">
+                            <i class="bi bi-people-fill me-1"></i> Team: <span id="res-team-name"></span>
+                        </div>
+                        <div class="text-white-50 small mt-2" style="font-size: 0.75rem;">
+                            Time: <span id="res-checkin-time" class="text-white"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="result-warning-content" class="d-none">
+                    <div class="p-3 rounded-4 mb-3 border border-warning border-opacity-40" style="background: rgba(245, 158, 11, 0.12);">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="bi bi-exclamation-triangle-fill text-warning fs-4"></i>
+                            <span class="text-warning fw-bold text-uppercase small">Already Checked In!</span>
+                        </div>
+                        <h5 class="text-white fw-bold mb-1" id="res-warn-student-name">Student Name</h5>
+                        <div class="text-white-50 small mb-2" id="res-warn-student-dept"></div>
+                        <div class="small text-warning" id="res-warn-msg">This attendee was checked in earlier.</div>
+                    </div>
+                </div>
+
+                <div id="result-error-content" class="d-none">
+                    <div class="p-3 rounded-4 mb-3 border border-danger border-opacity-40" style="background: rgba(244, 63, 94, 0.12);">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="bi bi-x-circle-fill text-danger fs-4"></i>
+                            <span class="text-danger fw-bold text-uppercase small">Validation Failed</span>
+                        </div>
+                        <div class="text-white small" id="res-error-msg">Invalid Pass or wrong event.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Scans Session Log -->
+            <div class="glass-card p-4">
+                <h6 class="text-white fw-bold mb-3 d-flex align-items-center justify-content-between">
+                    <span><i class="bi bi-clock-history text-info me-2"></i> Recent Session Scans</span>
+                    <span class="badge bg-dark text-white-50 small" id="session-count">0</span>
+                </h6>
+                <div class="d-flex flex-column gap-2" id="session-log-list" style="max-height: 280px; overflow-y: auto;">
+                    <div class="text-white-50 small text-center py-3" id="log-empty-msg">
+                        No scans recorded during this session yet.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const EVENT_ID = "{{ event.id }}";
+    const CSRF_TOKEN = "{{ csrf_token }}";
+    let html5QrCode = null;
+    let isProcessing = false;
+    let sessionScans = 0;
+
+    const btnStart = document.getElementById('btn-start-camera');
+    const btnStop = document.getElementById('btn-stop-camera');
+    const radarLine = document.getElementById('radar-line');
+    const manualForm = document.getElementById('manual-scan-form');
+    const manualInput = document.getElementById('manual-token-input');
+
+    // Start Camera Scanner
+    btnStart.addEventListener('click', async () => {
+        try {
+            html5QrCode = new Html5Qrcode("qr-reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+            
+            await html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                onScanSuccess
+            );
+
+            btnStart.classList.add('d-none');
+            btnStop.classList.remove('d-none');
+            radarLine.style.display = 'block';
+        } catch (err) {
+            console.error("Camera access failed:", err);
+            alert("Could not access camera: " + err + ". You can use the Manual Token input below!");
+        }
+    });
+
+    // Stop Camera
+    btnStop.addEventListener('click', async () => {
+        if (html5QrCode) {
+            await html5QrCode.stop();
+            btnStop.classList.add('d-none');
+            btnStart.classList.remove('d-none');
+            radarLine.style.display = 'none';
+        }
+    });
+
+    // Handle Manual Input Submit
+    manualForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const token = manualInput.value.trim();
+        if (token) {
+            verifyToken(token);
+            manualInput.value = '';
+        }
+    });
+
+    // QR Scan handler
+    function onScanSuccess(decodedText, decodedResult) {
+        if (isProcessing) return;
+        isProcessing = true;
+        verifyToken(decodedText);
+        setTimeout(() => { isProcessing = false; }, 2500); // 2.5s cooldown
+    }
+
+    // Verify token with Django API
+    async function verifyToken(token) {
+        try {
+            const response = await fetch('/api/scan-ticket/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CSRF_TOKEN
+                },
+                body: JSON.stringify({
+                    token: token,
+                    event_id: EVENT_ID
+                })
+            });
+
+            const data = await response.json();
+            displayResult(data);
+        } catch (error) {
+            displayResult({
+                success: false,
+                status_code: 'NETWORK_ERROR',
+                message: 'Network error communicating with validation server.'
+            });
+        }
+    }
+
+    function displayResult(data) {
+        // Hide all result sub-boxes
+        document.getElementById('result-placeholder').classList.add('d-none');
+        document.getElementById('result-success-content').classList.add('d-none');
+        document.getElementById('result-warning-content').classList.add('d-none');
+        document.getElementById('result-error-content').classList.add('d-none');
+
+        const card = document.getElementById('scan-result-card');
+        const badge = document.getElementById('scan-status-badge');
+
+        if (data.success && data.status_code === 'SUCCESS') {
+            // SUCCESS
+            FeedbackAudio.playSuccess();
+            card.style.borderColor = '#10b981';
+            badge.className = 'badge bg-success';
+            badge.innerText = 'VALIDATED';
+
+            document.getElementById('res-student-name').innerText = data.attendee.name;
+            document.getElementById('res-student-dept').innerText = `${data.attendee.department} · ${data.attendee.college}`;
+            
+            if (data.attendee.team_name) {
+                document.getElementById('res-team-box').classList.remove('d-none');
+                document.getElementById('res-team-name').innerText = data.attendee.team_name;
+            } else {
+                document.getElementById('res-team-box').classList.add('d-none');
+            }
+
+            document.getElementById('res-checkin-time').innerText = data.attendee.checked_in_at;
+            document.getElementById('result-success-content').classList.remove('d-none');
+
+            // Update stats
+            if (data.stats) {
+                document.getElementById('stat-checked-in').innerText = data.stats.checked_in;
+                document.getElementById('stat-total').innerText = data.stats.total;
+            }
+
+            addSessionLog(data.attendee.name, 'VERIFIED', 'text-success');
+
+        } else if (data.status_code === 'ALREADY_CHECKED_IN') {
+            // WARNING - ALREADY CHECKED IN
+            FeedbackAudio.playWarning();
+            card.style.borderColor = '#f59e0b';
+            badge.className = 'badge bg-warning text-dark';
+            badge.innerText = 'ALREADY CHECKED IN';
+
+            document.getElementById('res-warn-student-name').innerText = data.attendee.name;
+            document.getElementById('res-warn-student-dept').innerText = `${data.attendee.department} · ${data.attendee.college}`;
+            document.getElementById('res-warn-msg').innerText = data.message;
+            document.getElementById('result-warning-content').classList.remove('d-none');
+
+            addSessionLog(data.attendee.name, 'ALREADY CHECKED IN', 'text-warning');
+
+        } else {
+            // ERROR / NOT FOUND / WRONG EVENT
+            FeedbackAudio.playError();
+            card.style.borderColor = '#f43f5e';
+            badge.className = 'badge bg-danger';
+            badge.innerText = 'REJECTED';
+
+            document.getElementById('res-error-msg').innerText = data.message || 'Pass validation failed.';
+            document.getElementById('result-error-content').classList.remove('d-none');
+
+            addSessionLog('Unknown Pass', data.message || 'Invalid', 'text-danger');
+        }
+    }
+
+    function addSessionLog(name, status, statusClass) {
+        sessionScans++;
+        document.getElementById('session-count').innerText = sessionScans;
+        document.getElementById('log-empty-msg')?.remove();
+
+        const logList = document.getElementById('session-log-list');
+        const item = document.createElement('div');
+        item.className = 'p-2 px-3 rounded-3 bg-dark border border-secondary border-opacity-25 d-flex justify-content-between align-items-center small';
+        item.innerHTML = `
+            <div>
+                <strong class="text-white">${name}</strong>
+            </div>
+            <span class="${statusClass} fw-semibold">${status}</span>
+        `;
+        logList.insertBefore(item, logList.firstChild);
+    }
+</script>
+{% endblock %}

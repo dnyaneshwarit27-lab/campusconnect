@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}Certificate of Participation — {{ event.title }} | CampusConnect{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Action Bar -->
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print max-w-4xl mx-auto">
+        <a href="{% url 'ticket_pass' registration.registration_token %}" class="btn btn-glass btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Back to Pass
+        </a>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-primary-custom btn-sm">
+                <i class="bi bi-printer me-1"></i> Print / Download PDF
+            </button>
+            <button class="btn btn-glass btn-sm" data-copy-target="{{ verify_url }}">
+                <i class="bi bi-share me-1"></i> Copy Verification Link
+            </button>
+        </div>
+    </div>
+
+    <!-- Official Certificate Container -->
+    <div class="max-w-4xl mx-auto">
+        <div class="certificate-frame">
+            
+            <!-- Top University Header -->
+            <div class="text-center mb-4">
+                <div class="text-uppercase fw-bold letter-spacing-2" style="color: #b45309; letter-spacing: 0.15em; font-size: 0.9rem;">
+                    {{ event.college_name }} · CAMPUSCONNECT ACCREDITED
+                </div>
+                <h1 class="display-5 fw-bold mt-2 mb-1" style="color: #1e1b4b; font-family: 'Times New Roman', serif;">
+                    Certificate of Participation
+                </h1>
+                <div class="text-muted small text-uppercase" style="letter-spacing: 0.2em;">
+                    OFFICIAL DIGITAL CREDENTIAL
+                </div>
+            </div>
+
+            <!-- Recipient Name Block -->
+            <div class="text-center my-4 py-2">
+                <p class="text-muted mb-1" style="font-style: italic; font-size: 1.1rem;">This certificate is proudly awarded to</p>
+                <h2 class="display-6 fw-bold pb-2 border-bottom border-warning border-opacity-50 d-inline-block px-5" 
+                    style="color: #0f172a; font-family: var(--font-heading);">
+                    {{ registration.user.get_full_name|default:registration.user.username }}
+                </h2>
+                <div class="text-muted mt-2 small">
+                    {{ registration.user.profile.college|default:event.college_name }} · {{ registration.user.profile.department }}
+                </div>
+            </div>
+
+            <!-- Event Achievement Details -->
+            <div class="text-center my-4 px-md-5">
+                <p style="color: #334155; font-size: 1.15rem; line-height: 1.7;">
+                    For their verified attendance and active participation in the 
+                    <strong style="color: #1e1b4b;">"{{ event.title }}"</strong>, 
+                    organized by the <strong>{{ event.department }}</strong> on 
+                    <strong>{{ event.start_date|date:"F d, Y" }}</strong>.
+                </p>
+            </div>
+
+            <!-- Signatures, Seal & Verification QR -->
+            <div class="row align-items-end mt-5 pt-4 text-center">
+                <!-- Signature 1: Coordinator -->
+                <div class="col-4">
+                    <div class="border-bottom border-dark border-opacity-50 pb-1 mb-2 mx-auto" style="max-width: 180px;">
+                        <span style="font-family: 'Brush Script MT', cursive, sans-serif; font-size: 1.6rem; color: #1e1b4b;">
+                            {{ event.coordinator_name|default:"P. Deshmukh" }}
+                        </span>
+                    </div>
+                    <div class="fw-bold small text-uppercase" style="font-size: 0.75rem;">{{ event.coordinator_name }}</div>
+                    <div class="text-muted" style="font-size: 0.7rem;">Lead Event Coordinator</div>
+                </div>
+
+                <!-- Center Gold Seal -->
+                <div class="col-4">
+                    <div class="certificate-seal">
+                        <i class="bi bi-shield-fill-check fs-2"></i>
+                        <span style="font-size: 0.65rem; font-weight: bold; letter-spacing: 0.05em;">VERIFIED</span>
+                    </div>
+                </div>
+
+                <!-- Signature 2: Dean / Faculty Head -->
+                <div class="col-4">
+                    <div class="border-bottom border-dark border-opacity-50 pb-1 mb-2 mx-auto" style="max-width: 180px;">
+                        <span style="font-family: 'Brush Script MT', cursive, sans-serif; font-size: 1.6rem; color: #1e1b4b;">
+                            Dr. R. Kulkarni
+                        </span>
+                    </div>
+                    <div class="fw-bold small text-uppercase" style="font-size: 0.75rem;">Dr. Rajesh Kulkarni</div>
+                    <div class="text-muted" style="font-size: 0.7rem;">Dean, Academic Affairs</div>
+                </div>
+            </div>
+
+            <!-- Bottom Verification QR & Credential Hash -->
+            <div class="mt-4 pt-3 border-top border-warning border-opacity-25 d-flex justify-content-between align-items-center small text-muted">
+                <div>
+                    <div><strong>Credential ID:</strong> CC-{{ registration.pass_token_short }}-{{ registration.event.id }}</div>
+                    <div style="font-size: 0.75rem;">Verified on CampusConnect Blockchain-Ready Ledger</div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <img src="{{ qr_base64 }}" alt="Verify QR" style="width: 55px; height: 55px; border: 1px solid #e2e8f0; border-radius: 4px;">
+                    <div class="text-start" style="font-size: 0.7rem;">
+                        Scan QR to<br>verify authenticity
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

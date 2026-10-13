@@ -1,0 +1,367 @@
+{% extends 'base.html' %}
+
+{% block title %}CampusConnect — Discover Events, Hackathons & Workshops{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-wrapper text-center">
+    <div class="hero-glow-blob"></div>
+    <div class="container position-relative" style="z-index: 1;">
+        <div class="hero-pill">
+            <i class="bi bi-stars text-warning"></i>
+            <span>The Premier College Events & Hackathon Ecosystem</span>
+        </div>
+        <h1 class="hero-title">
+            Discover Campus Events.<br>Register Instantly. Scan QR to Attend.
+        </h1>
+        <p class="hero-subtitle">
+            Say goodbye to scattered WhatsApp chats, lost poster links, and notice board clutter. 
+            Find verified campus hackathons, technical workshops, and flagship fests with automated digital QR passes.
+        </p>
+
+        <div class="d-flex flex-wrap justify-content-center gap-3 mb-4">
+            <a href="#events-section" class="btn btn-primary-custom px-4 py-2">
+                <i class="bi bi-compass"></i> Explore All Events
+            </a>
+            {% if user.is_authenticated and user.profile.is_coordinator or user.is_staff or user.is_superuser %}
+                <a href="{% url 'coordinator_create_event' %}" class="btn btn-glass px-4 py-2">
+                    <i class="bi bi-plus-circle"></i> Host New Event
+                </a>
+            {% else %}
+                <a href="{% url 'team_finder' %}" class="btn btn-glass px-4 py-2">
+                    <i class="bi bi-people"></i> Find Hackathon Teammates
+                </a>
+            {% endif %}
+        </div>
+
+        <!-- Real Dynamic Stats Ribbon (100% Calculated from Database) -->
+        <div class="row g-3 justify-content-center mt-2 max-w-4xl mx-auto">
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded-4 glass-card text-center">
+                    <div class="fs-3 fw-bold text-white">{{ stats.total_events }}</div>
+                    <div class="small text-white-50"><i class="bi bi-calendar4-event me-1 text-primary"></i> Live Events</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded-4 glass-card text-center">
+                    <div class="fs-3 fw-bold text-white">{{ stats.total_registrations }}</div>
+                    <div class="small text-white-50"><i class="bi bi-person-check me-1 text-success"></i> Passes Issued</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded-4 glass-card text-center">
+                    <div class="fs-3 fw-bold text-white">{{ stats.total_verified_attendance }}</div>
+                    <div class="small text-white-50"><i class="bi bi-qr-code text-info me-1"></i> QR Verified</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded-4 glass-card text-center">
+                    <div class="fs-3 fw-bold text-white">{{ stats.colleges_count }}</div>
+                    <div class="small text-white-50"><i class="bi bi-buildings text-warning me-1"></i> Partner Colleges</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Closing Soon Urgent Alert (If Any Real Event Closing Soon) -->
+{% if closing_soon %}
+<section class="container mb-4">
+    <div class="p-3 rounded-4 border border-warning border-opacity-25" style="background: rgba(245, 158, 11, 0.08);">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-2 rounded-3 bg-warning text-dark fs-4">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <div>
+                    <div class="fw-bold text-warning">Registration Closing Soon!</div>
+                    <div class="text-white-50 small">Seats are filling fast for upcoming hackathons and workshop sessions:</div>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                {% for cs_event in closing_soon %}
+                    <a href="{% url 'event_detail' cs_event.slug %}" class="btn btn-sm btn-glass text-nowrap py-1">
+                        <span class="text-white">{{ cs_event.title|truncatechars:28 }}</span>
+                        <span class="badge bg-danger ms-1">{{ cs_event.seats_left }} seats left</span>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Categories Filter Ribbon -->
+<section class="container mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h5 class="text-white fw-bold mb-0"><i class="bi bi-grid-fill text-primary me-2"></i> Browse by Category</h5>
+        <a href="{% url 'home' %}" class="text-white-50 small text-decoration-none hover-white">Clear All Filters</a>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'home' %}" class="filter-pill {% if not current_category %}active{% endif %}">
+            <i class="bi bi-collection"></i> All Categories
+        </a>
+        {% for cat in categories %}
+            <a href="{% url 'home' %}?category={{ cat.slug }}{% if current_mode %}&mode={{ current_mode }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}" 
+               class="filter-pill {% if current_category == cat.slug %}active{% endif %}">
+                <i class="bi {{ cat.icon }}"></i> {{ cat.name }}
+                <span class="badge bg-black bg-opacity-40 rounded-pill ms-1">{{ cat.active_events_count }}</span>
+            </a>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Search & Live Filters Form -->
+<section class="container mb-5" id="events-section">
+    <div class="p-3 p-md-4 rounded-4 glass-card mb-4">
+        <form method="GET" action="{% url 'home' %}#events-section" class="row g-3 align-items-center">
+            <!-- Search Keyword -->
+            <div class="col-lg-4 col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-dark border-secondary border-opacity-25 text-white-50">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" name="q" value="{{ current_query }}" class="form-control form-control-custom border-start-0" 
+                           placeholder="Search hackathons, topics, venues...">
+                </div>
+            </div>
+
+            <!-- Mode Filter -->
+            <div class="col-lg-3 col-md-6">
+                <select name="mode" class="form-select form-select-custom">
+                    <option value="">All Event Modes (In-Person & Online)</option>
+                    <option value="OFFLINE" {% if current_mode == 'OFFLINE' %}selected{% endif %}>🏢 In-Person (On Campus)</option>
+                    <option value="ONLINE" {% if current_mode == 'ONLINE' %}selected{% endif %}>🌐 Online / Virtual</option>
+                    <option value="HYBRID" {% if current_mode == 'HYBRID' %}selected{% endif %}>⚡ Hybrid</option>
+                </select>
+            </div>
+
+            <!-- Department Filter -->
+            <div class="col-lg-3 col-md-6">
+                <select name="department" class="form-select form-select-custom">
+                    <option value="">All Departments</option>
+                    {% for dept in departments %}
+                        <option value="{{ dept }}" {% if current_department == dept %}selected{% endif %}>{{ dept }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Filter Status & Submit -->
+            <div class="col-lg-2 col-md-6 d-flex gap-2">
+                <input type="hidden" name="category" value="{{ current_category }}">
+                <input type="hidden" name="status" value="{{ current_status }}">
+                <button type="submit" class="btn btn-primary-custom w-100 py-2">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+                {% if current_query or current_mode or current_department or current_category %}
+                    <a href="{% url 'home' %}#events-section" class="btn btn-glass py-2" title="Reset Filters">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+
+        <!-- Status Filter Tabs (Upcoming, Ongoing, Past) -->
+        <div class="d-flex gap-2 pt-3 mt-3 border-top border-secondary border-opacity-10 small">
+            <span class="text-white-50 me-2 align-self-center">Status:</span>
+            <a href="{% url 'home' %}?status=upcoming{% if current_category %}&category={{ current_category }}{% endif %}{% if current_mode %}&mode={{ current_mode }}{% endif %}" 
+               class="btn btn-sm {% if current_status == 'upcoming' %}btn-primary-custom{% else %}btn-glass text-white-50{% endif %} py-1 px-3">
+               Upcoming
+            </a>
+            <a href="{% url 'home' %}?status=ongoing{% if current_category %}&category={{ current_category }}{% endif %}{% if current_mode %}&mode={{ current_mode }}{% endif %}" 
+               class="btn btn-sm {% if current_status == 'ongoing' %}btn-primary-custom{% else %}btn-glass text-white-50{% endif %} py-1 px-3">
+               Ongoing Today
+            </a>
+            <a href="{% url 'home' %}?status=past{% if current_category %}&category={{ current_category }}{% endif %}{% if current_mode %}&mode={{ current_mode }}{% endif %}" 
+               class="btn btn-sm {% if current_status == 'past' %}btn-primary-custom{% else %}btn-glass text-white-50{% endif %} py-1 px-3">
+               Past Events
+            </a>
+        </div>
+    </div>
+
+    <!-- Events Grid or Proper Empty State -->
+    <div class="row g-4">
+        {% if events %}
+            {% for event in events %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="glass-card event-card">
+                        <!-- Banner Header -->
+                        <div class="event-banner-wrap" style="background: {{ event.banner_gradient }};">
+                            <div class="event-banner-overlay"></div>
+                            
+                            <!-- Badges -->
+                            <span class="event-category-badge">
+                                <i class="bi {{ event.category.icon }} me-1"></i> {{ event.category.name }}
+                            </span>
+
+                            <span class="event-badge-mode {% if event.event_mode == 'OFFLINE' %}mode-offline{% elif event.event_mode == 'ONLINE' %}mode-online{% else %}mode-hybrid{% endif %}">
+                                {% if event.event_mode == 'OFFLINE' %}<i class="bi bi-geo-alt-fill"></i> In-Person{% elif event.event_mode == 'ONLINE' %}<i class="bi bi-camera-video-fill"></i> Online{% else %}<i class="bi bi-hdd-network-fill"></i> Hybrid{% endif %}
+                            </span>
+
+                            <div class="position-relative text-white" style="z-index: 2;">
+                                <div class="badge bg-black bg-opacity-60 text-white-50 px-2 py-1 mb-1 small">
+                                    <i class="bi bi-calendar3 me-1"></i> {{ event.start_date|date:"D, M d, Y" }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card Body -->
+                        <div class="event-card-body">
+                            <a href="{% url 'event_detail' event.slug %}" class="text-decoration-none">
+                                <h3 class="event-card-title">{{ event.title }}</h3>
+                            </a>
+                            <p class="text-white-50 small mb-3 flex-grow-1" style="line-height: 1.5;">
+                                {{ event.short_description|truncatechars:120 }}
+                            </p>
+
+                            <!-- Meta Details -->
+                            <div class="event-meta-item">
+                                <i class="bi bi-geo-alt"></i>
+                                <span class="text-truncate">{{ event.venue }}</span>
+                            </div>
+                            <div class="event-meta-item">
+                                <i class="bi bi-building"></i>
+                                <span class="text-truncate">{{ event.department }}</span>
+                            </div>
+
+                            {% if event.prize_pool %}
+                                <div class="d-flex align-items-center gap-2 p-2 rounded-3 my-2" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2);">
+                                    <i class="bi bi-trophy-fill text-warning"></i>
+                                    <span class="small text-warning fw-semibold text-truncate">{{ event.prize_pool }}</span>
+                                </div>
+                            {% endif %}
+
+                            <!-- Capacity & Seats Meter -->
+                            <div class="mt-2 pt-2 border-top border-secondary border-opacity-10">
+                                <div class="d-flex justify-content-between align-items-center small text-white-50 mb-1">
+                                    <span>
+                                        {% if event.is_team_event %}
+                                            <i class="bi bi-people-fill text-info me-1"></i> Team ({{ event.min_team_size }}-{{ event.max_team_size }})
+                                        {% else %}
+                                            <i class="bi bi-person-fill text-info me-1"></i> Individual
+                                        {% endif %}
+                                    </span>
+                                    <span class="{% if event.seats_left <= 10 %}text-danger fw-bold{% else %}text-success{% endif %}">
+                                        {{ event.seats_left }} / {{ event.capacity }} spots left
+                                    </span>
+                                </div>
+                                <div class="progress" style="height: 6px; background: rgba(255,255,255,0.08);">
+                                    <div class="progress-bar {% if event.seats_left <= 10 %}bg-danger{% else %}bg-primary{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ event.confirmed_registrations_count|stringformat:'f' }}%;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Button Row -->
+                            <div class="d-flex gap-2 mt-3 pt-2">
+                                <a href="{% url 'event_detail' event.slug %}" class="btn btn-glass flex-grow-1 py-2">
+                                    View Details
+                                </a>
+                                {% if event.is_registration_open %}
+                                    <a href="{% url 'event_detail' event.slug %}#register-box" class="btn btn-primary-custom py-2 px-3" title="Register">
+                                        <i class="bi bi-ticket-perforated"></i> Register
+                                    </a>
+                                {% else %}
+                                    <span class="btn btn-secondary disabled opacity-50 py-2 px-3">Closed</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <!-- Proper Empty State (No Fake Records) -->
+            <div class="col-12 text-center py-5">
+                <div class="glass-card p-5 max-w-xl mx-auto">
+                    <div class="p-3 rounded-circle bg-primary bg-opacity-20 text-primary d-inline-flex mb-3">
+                        <i class="bi bi-calendar2-plus fs-1"></i>
+                    </div>
+                    <h4 class="text-white fw-bold mb-2">No Events Published Yet</h4>
+                    <p class="text-white-50 small mb-4" style="line-height: 1.6;">
+                        This platform displays actual campus events published by authorized coordinators. 
+                        As soon as a coordinator hosts a hackathon, coding contest, or workshop, it will appear here in real-time.
+                    </p>
+                    <div class="d-flex flex-wrap justify-content-center gap-3">
+                        {% if user.is_authenticated and user.profile.is_coordinator or user.is_staff or user.is_superuser %}
+                            <a href="{% url 'coordinator_create_event' %}" class="btn btn-primary-custom px-4 py-2">
+                                <i class="bi bi-plus-circle me-1"></i> Host First Event
+                            </a>
+                        {% else %}
+                            <a href="{% url 'register' %}" class="btn btn-primary-custom px-4 py-2">
+                                <i class="bi bi-person-badge me-1"></i> Register as Coordinator
+                            </a>
+                            <a href="{% url 'team_finder' %}" class="btn btn-glass px-4 py-2">
+                                <i class="bi bi-people me-1"></i> Check Team Finder
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- How CampusConnect Works 5-Step Process Ribbon -->
+<section class="container mb-5 py-4">
+    <div class="text-center mb-5">
+        <span class="badge bg-primary bg-opacity-20 text-indigo border border-primary border-opacity-30 px-3 py-2 rounded-pill small mb-2">
+            Seamless Workflow
+        </span>
+        <h3 class="text-white fw-bold">How CampusConnect Works</h3>
+        <p class="text-white-50 small max-w-md mx-auto">From discovery to physical check-in and digital certification.</p>
+    </div>
+
+    <div class="row g-4 text-center">
+        <div class="col-md-4 col-lg">
+            <div class="p-3 rounded-4 glass-card h-100">
+                <div class="p-3 rounded-circle bg-primary bg-opacity-20 text-white d-inline-flex mb-3">
+                    <i class="bi bi-search fs-4"></i>
+                </div>
+                <h6 class="text-white fw-bold">1. Discover</h6>
+                <p class="text-white-50 small mb-0">Browse real verified events, filter by department or hackathon track.</p>
+            </div>
+        </div>
+
+        <div class="col-md-4 col-lg">
+            <div class="p-3 rounded-4 glass-card h-100">
+                <div class="p-3 rounded-circle bg-info bg-opacity-20 text-info d-inline-flex mb-3">
+                    <i class="bi bi-chat-dots fs-4"></i>
+                </div>
+                <h6 class="text-white fw-bold">2. Connect</h6>
+                <p class="text-white-50 small mb-0">Ask coordinator questions directly regarding laptops, rules or eligibility.</p>
+            </div>
+        </div>
+
+        <div class="col-md-4 col-lg">
+            <div class="p-3 rounded-4 glass-card h-100">
+                <div class="p-3 rounded-circle bg-success bg-opacity-20 text-success d-inline-flex mb-3">
+                    <i class="bi bi-ticket-perforated fs-4"></i>
+                </div>
+                <h6 class="text-white fw-bold">3. Register</h6>
+                <p class="text-white-50 small mb-0">Single click or team registration. Instant unique QR pass generated.</p>
+            </div>
+        </div>
+
+        <div class="col-md-4 col-lg">
+            <div class="p-3 rounded-4 glass-card h-100">
+                <div class="p-3 rounded-circle bg-warning bg-opacity-20 text-warning d-inline-flex mb-3">
+                    <i class="bi bi-qr-code-scan fs-4"></i>
+                </div>
+                <h6 class="text-white fw-bold">4. QR Check-In</h6>
+                <p class="text-white-50 small mb-0">Coordinator scans pass at venue entrance using camera. Attendance verified.</p>
+            </div>
+        </div>
+
+        <div class="col-md-4 col-lg">
+            <div class="p-3 rounded-4 glass-card h-100">
+                <div class="p-3 rounded-circle bg-danger bg-opacity-20 text-danger d-inline-flex mb-3">
+                    <i class="bi bi-award fs-4"></i>
+                </div>
+                <h6 class="text-white fw-bold">5. Certificate</h6>
+                <p class="text-white-50 small mb-0">Download verified digital certificate of participation instantly.</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

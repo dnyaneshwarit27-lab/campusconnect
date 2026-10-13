@@ -1,0 +1,250 @@
+{% extends 'base.html' %}
+
+{% block title %}Campus Administrator Control Center — CampusConnect{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30 small mb-2">
+                <i class="bi bi-shield-check"></i> Campus Admin Console
+            </div>
+            <h2 class="text-white fw-bold mb-1">Campus Administration Panel</h2>
+            <p class="text-white-50 small mb-0">Platform oversight: approve coordinators, audit campus events, and review MongoDB Atlas collections.</p>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a href="{% url 'mongodb_status' %}" target="_blank" class="btn btn-glass btn-sm">
+                <i class="bi bi-database me-1"></i> MongoDB JSON Diagnostic
+            </a>
+            <a href="/admin/" class="btn btn-glass btn-sm">
+                <i class="bi bi-gear me-1"></i> Django Core Admin
+            </a>
+        </div>
+    </div>
+
+    <!-- MongoDB Atlas Cloud Collections Audit Card -->
+    <div class="glass-card p-4 mb-4 border border-info border-opacity-30" style="background: rgba(6, 182, 212, 0.05);">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+            <div>
+                <h5 class="text-white fw-bold mb-1 d-flex align-items-center gap-2">
+                    <i class="bi bi-database text-info"></i> MongoDB Atlas Cloud Database Health
+                </h5>
+                <div class="text-white-50 small">{{ mongo_msg }}</div>
+            </div>
+            <div>
+                {% if mongo_connected %}
+                    <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-40 py-2 px-3">
+                        <i class="bi bi-check-circle-fill me-1"></i> Atlas Live Connected
+                    </span>
+                {% else %}
+                    <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-40 py-2 px-3">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> Ready for MONGODB_URI in .env
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 8 Collections Status Grid -->
+        <div class="row g-2 mt-2">
+            <div class="col-6 col-md-3">
+                <div class="p-2 px-3 rounded-3 bg-dark border border-secondary border-opacity-25 small">
+                    <span class="text-white-50 d-block" style="font-size: 0.72rem;">COLLECTION:</span>
+                    <strong class="text-white">users</strong>: <span class="text-info fw-bold">{{ atlas_counts.users }}</span>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-2 px-3 rounded-3 bg-dark border border-secondary border-opacity-25 small">
+                    <span class="text-white-50 d-block" style="font-size: 0.72rem;">COLLECTION:</span>
+                    <strong class="text-white">events</strong>: <span class="text-info fw-bold">{{ atlas_counts.events }}</span>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-2 px-3 rounded-3 bg-dark border border-secondary border-opacity-25 small">
+                    <span class="text-white-50 d-block" style="font-size: 0.72rem;">COLLECTION:</span>
+                    <strong class="text-white">registrations</strong>: <span class="text-info fw-bold">{{ atlas_counts.registrations }}</span>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-2 px-3 rounded-3 bg-dark border border-secondary border-opacity-25 small">
+                    <span class="text-white-50 d-block" style="font-size: 0.72rem;">COLLECTION:</span>
+                    <strong class="text-white">teams</strong>: <span class="text-info fw-bold">{{ atlas_counts.teams }}</span>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-2 px-3 rounded-3 bg-dark border border-secondary border-opacity-25 small">
+                    <span class="text-white-50 d-block" style="font-size: 0.72rem;">COLLECTION:</span>
+                    <strong class="text-white">event_questions</strong>: <span class="text-info fw-bold">{{ atlas_counts.event_questions }}</span>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-2 px-3 rounded-3 bg-dark border border-secondary border-opacity-25 small">
+                    <span class="text-white-50 d-block" style="font-size: 0.72rem;">COLLECTION:</span>
+                    <strong class="text-white">attendance</strong>: <span class="text-info fw-bold">{{ atlas_counts.attendance }}</span>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-2 px-3 rounded-3 bg-dark border border-secondary border-opacity-25 small">
+                    <span class="text-white-50 d-block" style="font-size: 0.72rem;">COLLECTION:</span>
+                    <strong class="text-white">announcements</strong>: <span class="text-info fw-bold">{{ atlas_counts.announcements }}</span>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-2 px-3 rounded-3 bg-dark border border-secondary border-opacity-25 small">
+                    <span class="text-white-50 d-block" style="font-size: 0.72rem;">COLLECTION:</span>
+                    <strong class="text-white">feedback</strong>: <span class="text-info fw-bold">{{ atlas_counts.feedback }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Platform Stats -->
+    <div class="row g-3 mb-5">
+        <div class="col-6 col-lg-3">
+            <div class="glass-card p-4">
+                <div class="text-white-50 small mb-1">Enrolled Students</div>
+                <div class="fs-2 fw-bold text-white">{{ stats.total_students }}</div>
+                <div class="small text-primary"><i class="bi bi-people"></i> Campus learners</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="glass-card p-4">
+                <div class="text-white-50 small mb-1">Active Coordinators</div>
+                <div class="fs-2 fw-bold text-info">{{ stats.total_coordinators }}</div>
+                <div class="small text-info"><i class="bi bi-person-badge"></i> Faculty & Leads</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="glass-card p-4">
+                <div class="text-white-50 small mb-1">Published Events</div>
+                <div class="fs-2 fw-bold text-warning">{{ stats.total_events }}</div>
+                <div class="small text-warning"><i class="bi bi-calendar-check"></i> Hub campaigns</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="glass-card p-4">
+                <div class="text-white-50 small mb-1">Total QR Check-Ins</div>
+                <div class="fs-2 fw-bold text-success">{{ stats.total_checkins }}</div>
+                <div class="small text-success"><i class="bi bi-qr-code-scan"></i> Verified entries</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coordinator Account Approvals -->
+    <div class="glass-card p-4 p-md-5 mb-5">
+        <h4 class="text-white fw-bold mb-4">
+            <i class="bi bi-person-check text-primary me-2"></i> Event Coordinators & Organizers
+        </h4>
+
+        {% if coordinators %}
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0" style="background: transparent;">
+                    <thead>
+                        <tr class="text-white-50 small text-uppercase" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <th>Coordinator</th>
+                            <th>College & Department</th>
+                            <th>Role</th>
+                            <th>Verification Status</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for coord in coordinators %}
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <td>
+                                    <div class="fw-bold text-white">{{ coord.user.get_full_name|default:coord.user.username }}</div>
+                                    <div class="text-white-50 small">{{ coord.user.email }}</div>
+                                </td>
+                                <td>
+                                    <div class="text-white small">{{ coord.college }}</div>
+                                    <div class="text-white-50 small">{{ coord.department }}</div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-dark border border-secondary border-opacity-30 text-white-50">
+                                        {{ coord.get_role_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if coord.is_approved %}
+                                        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-40">
+                                            <i class="bi bi-check-circle-fill me-1"></i> Approved
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-40">
+                                            <i class="bi bi-hourglass-split me-1"></i> Pending Review
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{% url 'admin_toggle_coordinator' coord.id %}" 
+                                       class="btn btn-sm {% if coord.is_approved %}btn-glass text-warning{% else %}btn-primary-custom{% endif %} py-1 px-3">
+                                        {% if coord.is_approved %}Revoke{% else %}Approve{% endif %}
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-4 text-white-50 small">
+                No coordinator accounts registered yet.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- All Events Audit -->
+    <div class="glass-card p-4 p-md-5">
+        <h4 class="text-white fw-bold mb-4">
+            <i class="bi bi-shield-shaded text-warning me-2"></i> Campus Events Audit Log
+        </h4>
+
+        {% if events %}
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0" style="background: transparent;">
+                    <thead>
+                        <tr class="text-white-50 small text-uppercase" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <th>Event Title</th>
+                            <th>Coordinator</th>
+                            <th>Dates</th>
+                            <th>Registrations</th>
+                            <th class="text-end">Hub Link</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ev in events %}
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <td>
+                                    <div class="fw-bold text-white">{{ ev.title }}</div>
+                                    <span class="badge bg-primary bg-opacity-20 text-white-50 small">{{ ev.category.name }}</span>
+                                </td>
+                                <td>
+                                    <div class="text-white small">{{ ev.coordinator_name }}</div>
+                                    <div class="text-white-50 small">{{ ev.department }}</div>
+                                </td>
+                                <td>
+                                    <div class="text-white small">{{ ev.start_date|date:"M d, Y" }}</div>
+                                </td>
+                                <td>
+                                    <span class="text-white fw-bold small">{{ ev.confirmed_registrations_count }}</span>
+                                    <span class="text-white-50 small">/ {{ ev.capacity }}</span>
+                                </td>
+                                <td class="text-end">
+                                    <a href="{% url 'event_detail' ev.slug %}" class="btn btn-sm btn-glass py-1 px-2" title="Inspect">
+                                        <i class="bi bi-box-arrow-up-right"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-4 text-white-50 small">
+                No events published in the database yet.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

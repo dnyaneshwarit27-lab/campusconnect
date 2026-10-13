@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Log In — CampusConnect{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="max-w-md mx-auto">
+        <div class="text-center mb-4">
+            <span class="brand-badge fs-4 p-2 px-3 mb-3 d-inline-block"><i class="bi bi-qr-code-scan"></i></span>
+            <h3 class="text-white fw-bold">Sign In to CampusConnect</h3>
+            <p class="text-white-50 small">Access your registered passes, questions, or coordinator dashboard.</p>
+        </div>
+
+        <!-- Standard Real Account Login Form -->
+        <div class="glass-card p-4 p-md-5">
+            <form method="POST" action="{% url 'login' %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label text-white small fw-bold">Username</label>
+                    <input type="text" name="username" class="form-control form-control-custom" placeholder="Enter your username" required autofocus>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label text-white small fw-bold">Password</label>
+                    <input type="password" name="password" class="form-control form-control-custom" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary-custom w-100 py-3 fs-6">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
+                </button>
+            </form>
+
+            <div class="mt-4 pt-3 text-center border-top border-secondary border-opacity-10 small text-white-50">
+                Don't have an account yet? 
+                <a href="{% url 'register' %}" class="text-primary-light fw-bold text-decoration-none">Create New Account</a>
+            </div>
+        </div>
+
+        <!-- Role Information Notice -->
+        <div class="p-3 rounded-4 mt-4 glass-card text-center small text-white-50">
+            <i class="bi bi-info-circle text-info me-1"></i> You can sign up as a <strong>Student</strong> to register for events or as an <strong>Event Coordinator</strong> to publish and manage campus competitions.
+        </div>
+    </div>
+</div>
+{% endblock %}

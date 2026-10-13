@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block title %}Coordinator Control Desk — CampusConnect{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-info bg-opacity-20 text-info border border-info border-opacity-30 small mb-2">
+                <i class="bi bi-shield-lock-fill"></i> Coordinator Operations Portal
+            </div>
+            <h2 class="text-white fw-bold mb-1">Coordinator Desk</h2>
+            <p class="text-white-50 small mb-0">Oversee registrations, manage attendees, broadcast announcements, and launch QR scanners.</p>
+        </div>
+        <a href="{% url 'coordinator_create_event' %}" class="btn btn-primary-custom">
+            <i class="bi bi-plus-circle me-1"></i> Host New Event
+        </a>
+    </div>
+
+    <!-- KPI Metric Cards -->
+    <div class="row g-3 mb-5">
+        <div class="col-6 col-lg-3">
+            <div class="glass-card p-4">
+                <div class="text-white-50 small mb-1">Managed Events</div>
+                <div class="fs-2 fw-bold text-white">{{ stats.total_events }}</div>
+                <div class="small text-primary"><i class="bi bi-calendar4-event"></i> Active campaigns</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="glass-card p-4">
+                <div class="text-white-50 small mb-1">Total Registrations</div>
+                <div class="fs-2 fw-bold text-white">{{ stats.total_registrations }}</div>
+                <div class="small text-info"><i class="bi bi-people"></i> Confirmed attendees</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="glass-card p-4">
+                <div class="text-white-50 small mb-1">Checked In (Physical)</div>
+                <div class="fs-2 fw-bold text-success">{{ stats.total_checked_in }}</div>
+                <div class="small text-success"><i class="bi bi-qr-code-scan"></i> QR verified entry</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="glass-card p-4">
+                <div class="text-white-50 small mb-1">Attendance Rate</div>
+                <div class="fs-2 fw-bold text-warning">{{ stats.avg_attendance }}%</div>
+                <div class="small text-warning"><i class="bi bi-graph-up-arrow"></i> Check-in conversion</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coordinated Events List -->
+    <div class="glass-card p-4 p-md-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="text-white fw-bold mb-0">
+                <i class="bi bi-table text-primary me-2"></i> Your Coordinated Events
+            </h4>
+        </div>
+
+        {% if events %}
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0" style="background: transparent;">
+                    <thead>
+                        <tr class="text-white-50 small text-uppercase" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <th>Event Name</th>
+                            <th>Date & Mode</th>
+                            <th>Registrations</th>
+                            <th>Check-In Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for event in events %}
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <td>
+                                    <div class="fw-bold text-white fs-6">{{ event.title }}</div>
+                                    <span class="badge bg-primary bg-opacity-20 text-white-50 small">
+                                        {{ event.category.name }}
+                                    </span>
+                                    {% if event.is_team_event %}
+                                        <span class="badge bg-info bg-opacity-20 text-info small">Team Event</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="text-white small">{{ event.start_date|date:"M d, Y" }}</div>
+                                    <span class="text-white-50 small">{{ event.get_event_mode_display }}</span>
+                                </td>
+                                <td>
+                                    <div class="text-white fw-semibold small">{{ event.confirmed_registrations_count }} / {{ event.capacity }}</div>
+                                    <div class="progress" style="height: 5px; width: 110px; background: rgba(255,255,255,0.08);">
+                                        <div class="progress-bar bg-primary" style="width: {{ event.confirmed_registrations_count|stringformat:'f' }}%;"></div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="text-success fw-bold small">
+                                        <i class="bi bi-check2-circle"></i> {{ event.checked_in_count }} Checked In ({{ event.checkin_percentage }}%)
+                                    </div>
+                                    <div class="text-white-50 small">{{ event.seats_left }} seats remaining</div>
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-2">
+                                        <a href="{% url 'coordinator_scanner' event.slug %}" class="btn btn-sm btn-primary-custom py-1 px-3" title="Launch QR Scanner">
+                                            <i class="bi bi-qr-code-scan me-1"></i> Launch Scanner
+                                        </a>
+                                        <a href="{% url 'coordinator_manage_event' event.slug %}" class="btn btn-sm btn-glass py-1 px-2" title="Manage Roster & Q&A">
+                                            <i class="bi bi-gear me-1"></i> Manage
+                                        </a>
+                                        <a href="{% url 'event_detail' event.slug %}" class="btn btn-sm btn-glass py-1 px-2" title="View Public Page">
+                                            <i class="bi bi-box-arrow-up-right"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-calendar-plus text-white-50 display-4 mb-3"></i>
+                <h5 class="text-white fw-bold">No events hosted yet</h5>
+                <p class="text-white-50 small mb-3">Host a new hackathon, technical workshop, or coding challenge to start accepting registrations.</p>
+                <a href="{% url 'coordinator_create_event' %}" class="btn btn-primary-custom">Host Event</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
