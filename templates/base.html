@@ -72,17 +72,6 @@
                     {% endif %}
                 </ul>
 
-                <!-- MongoDB Atlas Connection Status Indicator -->
-                <div class="d-flex align-items-center me-lg-3 my-2 my-lg-0">
-                    <a href="{% url 'mongodb_status' %}" target="_blank" class="text-decoration-none" title="Click to view live MongoDB Atlas status & collection counts">
-                        <span class="badge bg-dark border border-secondary border-opacity-40 text-white-50 py-2 px-3 small d-inline-flex align-items-center gap-2">
-                            <i class="bi bi-database text-success"></i>
-                            <span class="d-none d-sm-inline">Database:</span>
-                            <span class="text-white fw-semibold">MongoDB Atlas</span>
-                        </span>
-                    </a>
-                </div>
-
                 <!-- User Profile / Auth State -->
                 <div class="d-flex align-items-center gap-2">
                     {% if user.is_authenticated %}
@@ -163,12 +152,12 @@
                     <p class="text-white-50 small mb-3">
                         The unified College Events & Hackathon Hub. Real user-entered events, tamper-proof QR attendance validation, and verified digital certificates.
                     </p>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex flex-wrap gap-2">
                         <span class="badge bg-dark border border-secondary text-white-50 small py-2 px-3">
-                            <i class="bi bi-database text-success me-1"></i> MongoDB Atlas Cloud
+                            <i class="bi bi-qr-code text-primary me-1"></i> Digital QR Passes
                         </span>
                         <span class="badge bg-dark border border-secondary text-white-50 small py-2 px-3">
-                            <i class="bi bi-camera text-info me-1"></i> In-Browser Camera Scanner
+                            <i class="bi bi-award text-warning me-1"></i> Verified Certificates
                         </span>
                     </div>
                 </div>
@@ -190,17 +179,15 @@
                         <li><a href="{% url 'coordinator_dashboard' %}" class="text-white-50 text-decoration-none hover-white">Coordinator Desk</a></li>
                         <li><a href="{% url 'admin_dashboard' %}" class="text-white-50 text-decoration-none hover-white">Campus Administration</a></li>
                         <li><a href="{% url 'my_registrations' %}" class="text-white-50 text-decoration-none hover-white">My Passes & Tickets</a></li>
-                        <li><a href="{% url 'mongodb_status' %}" target="_blank" class="text-white-50 text-decoration-none hover-white">MongoDB Atlas Status</a></li>
                     </ul>
                 </div>
 
                 <div class="col-lg-3">
-                    <h6 class="text-white fw-bold mb-3">Tech Architecture</h6>
+                    <h6 class="text-white fw-bold mb-3">Campus Helpdesk</h6>
                     <div class="p-3 rounded-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);">
-                        <div class="small text-white-50 mb-1">Stack Components:</div>
-                        <div class="text-white small fw-bold mb-1">Python 3.14 · Django 6.1</div>
-                        <div class="text-white small fw-bold mb-1">Database: MongoDB Atlas (8 Collections)</div>
-                        <div class="text-white small fw-bold">Deployment: Render Ready</div>
+                        <div class="small text-white-50 mb-2">Have questions about college events or passes?</div>
+                        <div class="text-white small fw-semibold mb-1"><i class="bi bi-envelope text-primary me-2"></i>events@campusconnect.edu</div>
+                        <div class="text-white small fw-semibold"><i class="bi bi-geo-alt text-danger me-2"></i>Student Activity Center</div>
                     </div>
                 </div>
             </div>
