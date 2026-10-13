@@ -87,6 +87,31 @@ class Command(BaseCommand):
         )
         mongo_sync_user(student_user, student_profile)
 
+        # Student: Dnyanu Thorat
+        dnyanu_user, _ = User.objects.get_or_create(
+            username="dnyanu@",
+            defaults={
+                "email": "dnyanu@gmail.com",
+                "first_name": "dnyanu",
+                "last_name": "thorat",
+            }
+        )
+        dnyanu_user.set_password("dnyanu@01")
+        dnyanu_user.save()
+        dnyanu_profile, _ = UserProfile.objects.get_or_create(
+            user=dnyanu_user,
+            defaults={
+                "role": "STUDENT",
+                "college": "Apex Institute of Technology",
+                "department": "Computer Science & Engineering",
+                "year_of_study": "3rd Year",
+                "phone": "6783938292",
+                "avatar_color": "#06b6d4",
+                "is_approved": True,
+            }
+        )
+        mongo_sync_user(dnyanu_user, dnyanu_profile)
+
         # Coordinator: Pooja
         coord_user, _ = User.objects.get_or_create(
             username="coordinator",
