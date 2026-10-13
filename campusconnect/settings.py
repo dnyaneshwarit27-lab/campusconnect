@@ -33,7 +33,7 @@ ALLOWED_HOSTS = ['*']
 
 # MongoDB Atlas Settings
 MONGODB_URI = os.environ.get('MONGODB_URI', '')
-MONGODB_DB_NAME = os.environ.get('MONGODB_DB_NAME', 'campusconnect')
+MONGODB_DB_NAME = os.environ.get('MONGODB_DB_NAME', 'campusconnect_db')
 
 
 # Application definition

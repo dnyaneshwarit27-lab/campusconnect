@@ -22,7 +22,7 @@ def get_mongodb_db_name():
     """
     Returns the configured MongoDB database name.
     """
-    return os.environ.get('MONGODB_DB_NAME', getattr(settings, 'MONGODB_DB_NAME', 'campusconnect'))
+    return os.environ.get('MONGODB_DB_NAME', getattr(settings, 'MONGODB_DB_NAME', 'campusconnect_db'))
 
 
 def get_mongo_client():
@@ -252,7 +252,7 @@ def mongo_sync_registration(registration):
         # If team event, also write/update 'teams' collection
         if registration.team_name:
             t_col = teams_col()
-            if t_col:
+            if t_col is not None:
                 t_doc = {
                     'team_name': registration.team_name,
                     'event_slug': registration.event.slug,
@@ -300,7 +300,7 @@ def mongo_record_attendance(registration, scanned_by_user):
 
         # Update registration status in registrations collection
         reg_col = registrations_col()
-        if reg_col:
+        if reg_col is not None:
             reg_col.update_one(
                 {'registration_token': str(registration.registration_token)},
                 {'$set': {
