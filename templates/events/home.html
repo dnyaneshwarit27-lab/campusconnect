@@ -274,28 +274,45 @@
             <!-- Proper Empty State (No Fake Records) -->
             <div class="col-12 text-center py-5">
                 <div class="glass-card p-5 max-w-xl mx-auto">
-                    <div class="p-3 rounded-circle bg-primary bg-opacity-20 text-primary d-inline-flex mb-3">
-                        <i class="bi bi-calendar2-plus fs-1"></i>
+                    <div style="width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, rgba(79, 70, 229, 0.35), rgba(99, 102, 241, 0.2)); border: 1.5px solid #818cf8; box-shadow: 0 0 25px rgba(99, 102, 241, 0.35); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1.25rem;">
+                        <i class="bi bi-calendar2-plus text-white fs-2"></i>
                     </div>
-                    <h4 class="text-white fw-bold mb-2">No Events Published Yet</h4>
-                    <p class="text-white-50 small mb-4" style="line-height: 1.6;">
-                        This platform displays actual campus events published by authorized coordinators. 
-                        As soon as a coordinator hosts a hackathon, coding contest, or workshop, it will appear here in real-time.
-                    </p>
-                    <div class="d-flex flex-wrap justify-content-center gap-3">
-                        {% if user.is_authenticated and user.profile.is_coordinator or user.is_staff or user.is_superuser %}
-                            <a href="{% url 'coordinator_create_event' %}" class="btn btn-primary-custom px-4 py-2">
-                                <i class="bi bi-plus-circle me-1"></i> Host First Event
+                    {% if current_category or current_mode or current_status != 'upcoming' or request.GET.q %}
+                        <h4 class="text-white fw-bold mb-2">No Events Found for Selected Filter</h4>
+                        <p class="text-white-50 small mb-4" style="line-height: 1.6;">
+                            There are currently no events matching this category or filter. Try clearing filters or exploring all campus events.
+                        </p>
+                        <div class="d-flex flex-wrap justify-content-center gap-3">
+                            <a href="{% url 'home' %}#events-section" class="btn btn-primary-custom px-4 py-2">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i> View All Events
                             </a>
-                        {% else %}
-                            <a href="{% url 'register' %}" class="btn btn-primary-custom px-4 py-2">
-                                <i class="bi bi-person-badge me-1"></i> Register as Coordinator
-                            </a>
-                            <a href="{% url 'team_finder' %}" class="btn btn-glass px-4 py-2">
-                                <i class="bi bi-people me-1"></i> Check Team Finder
-                            </a>
-                        {% endif %}
-                    </div>
+                            {% if user.is_authenticated and user.profile.is_coordinator or user.is_staff or user.is_superuser %}
+                                <a href="{% url 'coordinator_create_event' %}" class="btn btn-glass px-4 py-2">
+                                    <i class="bi bi-plus-circle me-1"></i> Host Event in this Category
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <h4 class="text-white fw-bold mb-2">No Events Published Yet</h4>
+                        <p class="text-white-50 small mb-4" style="line-height: 1.6;">
+                            This platform displays actual campus events published by authorized coordinators. 
+                            As soon as a coordinator hosts a hackathon, coding contest, or workshop, it will appear here in real-time.
+                        </p>
+                        <div class="d-flex flex-wrap justify-content-center gap-3">
+                            {% if user.is_authenticated and user.profile.is_coordinator or user.is_staff or user.is_superuser %}
+                                <a href="{% url 'coordinator_create_event' %}" class="btn btn-primary-custom px-4 py-2">
+                                    <i class="bi bi-plus-circle me-1"></i> Host First Event
+                                </a>
+                            {% else %}
+                                <a href="{% url 'register' %}" class="btn btn-primary-custom px-4 py-2">
+                                    <i class="bi bi-person-badge me-1"></i> Register as Coordinator
+                                </a>
+                                <a href="{% url 'team_finder' %}" class="btn btn-glass px-4 py-2">
+                                    <i class="bi bi-people me-1"></i> Check Team Finder
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         {% endif %}
