@@ -243,7 +243,7 @@
                 <!-- Status Modal for post {{ post.id }} (for applicant who sent a pitch) -->
                 {% if post.my_request %}
                     <div class="modal fade" id="myRequestStatusModal{{ post.id }}" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-dialog modal-dialog-centered modal-lg">
                             <div class="modal-content glass-card border-secondary border-opacity-25" style="background: #0f172a;">
                                 <div class="modal-header border-secondary border-opacity-10">
                                     <div class="d-flex align-items-center gap-2">
@@ -274,14 +274,74 @@
                                             <div class="text-start p-3 rounded-3 bg-black bg-opacity-40 border border-secondary border-opacity-20 mb-3">
                                                 <div class="text-white-50 small mb-1"><i class="bi bi-person-check-fill text-success me-1"></i> Team Leader Contact Details:</div>
                                                 <div class="text-white fw-bold mb-1">{{ post.user.get_full_name|default:post.user.username }}</div>
-                                                <div class="text-info small mb-2"><i class="bi bi-envelope-fill me-1"></i> {{ post.contact_handle|default:post.user.email }}</div>
+                                                <div class="text-info small mb-2"><i class="bi bi-envelope-fill me-1"></i> {{ post.clean_contact_handle|default:post.user.email }}</div>
                                                 <div class="text-white-50 small"><i class="bi bi-geo-alt-fill text-primary me-1"></i> {{ post.user.profile.college|default:'Campus' }} · {{ post.user.profile.department|default:'Engineering' }}</div>
                                             </div>
 
-                                            <a href="mailto:{{ post.contact_handle|default:post.user.email }}?subject=CampusConnect: Teaming up for {{ post.title|urlencode }}&body=Hi {{ post.user.first_name|default:post.user.username }}, thanks for accepting my pitch on CampusConnect! Looking forward to building together. Let's discuss our next steps." 
+                                            <a href="mailto:{{ post.clean_contact_handle|default:post.user.email }}?subject=CampusConnect: Teaming up for {{ post.title|urlencode }}&body=Hi {{ post.user.first_name|default:post.user.username }}, thanks for accepting my pitch on CampusConnect! Looking forward to building together. Let's discuss our next steps." 
                                                class="btn btn-success w-100 py-2 fw-bold shadow-sm">
                                                 <i class="bi bi-envelope-fill me-2"></i> Send Direct Email to {{ post.user.first_name|default:post.user.username }}
                                             </a>
+                                        </div>
+
+                                        <!-- Private 1-on-1 Chat Thread with Team Leader -->
+                                        <div class="p-3 rounded-4 bg-dark bg-opacity-70 border border-secondary border-opacity-25 mb-3 text-start">
+                                            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-secondary border-opacity-15">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <i class="bi bi-chat-dots-fill text-primary"></i>
+                                                    <span class="text-white fw-bold small">Direct Private Discussion</span>
+                                                </div>
+                                                <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-25 px-2 py-1" style="font-size: 0.7rem;">
+                                                    <i class="bi bi-shield-lock-fill me-1"></i> 1-on-1 Secure Thread
+                                                </span>
+                                            </div>
+                                            <p class="text-white-50 small mb-2" style="font-size: 0.78rem;">
+                                                Messages in this thread are private between you and <strong class="text-white">{{ post.user.get_full_name|default:post.user.username }}</strong>. Other users or applicants cannot see them.
+                                            </p>
+
+                                            <!-- Chat Stream -->
+                                            <div class="p-3 rounded-3 bg-black bg-opacity-40 mb-3" style="max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+                                                <!-- Starting Pitch -->
+                                                <div class="p-2 rounded-3 bg-primary bg-opacity-15 border border-primary border-opacity-25 text-start align-self-end" style="max-width: 88%;">
+                                                    <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
+                                                        <span class="text-primary fw-bold" style="font-size: 0.72rem;">You (Initial Pitch)</span>
+                                                        <span class="text-white-50" style="font-size: 0.68rem;">{{ post.my_request.created_at|timesince }} ago</span>
+                                                    </div>
+                                                    <div class="text-white small" style="white-space: pre-wrap; font-size: 0.83rem;">{{ post.my_request.message }}</div>
+                                                </div>
+
+                                                {% for chat in post.my_request.chat_messages.all %}
+                                                    {% if chat.sender == user %}
+                                                        <div class="p-2 rounded-3 bg-primary bg-opacity-25 border border-primary border-opacity-35 text-start align-self-end" style="max-width: 88%;">
+                                                            <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
+                                                                <span class="text-primary fw-bold" style="font-size: 0.72rem;">You</span>
+                                                                <span class="text-white-50" style="font-size: 0.68rem;">{{ chat.created_at|timesince }} ago</span>
+                                                            </div>
+                                                            <div class="text-white small" style="white-space: pre-wrap; font-size: 0.83rem;">{{ chat.message }}</div>
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="p-2 rounded-3 bg-secondary bg-opacity-20 border border-secondary border-opacity-30 text-start align-self-start" style="max-width: 88%;">
+                                                            <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
+                                                                <span class="text-info fw-bold" style="font-size: 0.72rem;">{{ post.user.get_full_name|default:post.user.username }} (Lead)</span>
+                                                                <span class="text-white-50" style="font-size: 0.68rem;">{{ chat.created_at|timesince }} ago</span>
+                                                            </div>
+                                                            <div class="text-white small" style="white-space: pre-wrap; font-size: 0.83rem;">{{ chat.message }}</div>
+                                                        </div>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+
+                                            <!-- Send Message Input -->
+                                            <form method="POST" action="{% url 'team_collab_send_message' post.my_request.id %}">
+                                                {% csrf_token %}
+                                                <div class="input-group">
+                                                    <input type="text" name="message" class="form-control form-control-custom text-white" 
+                                                           placeholder="Type a private message to {{ post.user.first_name|default:post.user.username }}..." required autocomplete="off" style="font-size: 0.85rem;">
+                                                    <button class="btn btn-primary-custom px-3" type="submit">
+                                                        <i class="bi bi-send-fill me-1"></i> Send
+                                                    </button>
+                                                </div>
+                                            </form>
                                         </div>
                                     {% elif post.my_request.status == 'DECLINED' %}
                                         <!-- Declined State -->
@@ -300,11 +360,11 @@
                                             <p class="text-white-50 small mb-3">
                                                 Your collaboration request has been delivered to <strong class="text-white">{{ post.user.get_full_name|default:post.user.username }}</strong>. They will review it soon!
                                             </p>
-                                            {% if post.contact_handle or post.user.email %}
+                                            {% if post.clean_contact_handle or post.user.email %}
                                                 <div class="p-2 rounded bg-black bg-opacity-30 text-white-50 small">
                                                     Need to reach them directly?
-                                                    <a href="mailto:{{ post.contact_handle|default:post.user.email }}" class="text-info fw-bold d-block mt-1">
-                                                        <i class="bi bi-envelope me-1"></i> {{ post.contact_handle|default:post.user.email }}
+                                                    <a href="mailto:{{ post.clean_contact_handle|default:post.user.email }}" class="text-info fw-bold d-block mt-1">
+                                                        <i class="bi bi-envelope me-1"></i> {{ post.clean_contact_handle|default:post.user.email }}
                                                     </a>
                                                 </div>
                                             {% endif %}
@@ -321,7 +381,7 @@
                                             "{{ post.my_request.message }}"
                                         </div>
                                         <div class="text-white-50 small">
-                                            Provided Contact Email: <strong class="text-white">{{ post.my_request.sender_contact }}</strong>
+                                            Provided Contact Email: <strong class="text-white">{{ post.my_request.clean_sender_contact }}</strong>
                                         </div>
                                     </div>
                                 </div>
@@ -411,11 +471,11 @@
 
                                                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 small">
                                                         <div class="text-info">
-                                                            <i class="bi bi-envelope-at me-1"></i> Contact: <strong>{{ req.sender_contact }}</strong>
+                                                            <i class="bi bi-envelope-at me-1"></i> Contact: <strong>{{ req.clean_sender_contact }}</strong>
                                                         </div>
                                                         <div class="d-flex align-items-center gap-2">
                                                             {% if req.status == 'ACCEPTED' %}
-                                                                <a href="mailto:{{ req.sender_contact }}?subject=CampusConnect: Welcome to the team for {{ post.title|urlencode }}!&body=Hi {{ req.sender.first_name|default:req.sender.username }}, I accepted your pitch on CampusConnect! Let's connect and build." 
+                                                                <a href="mailto:{{ req.clean_sender_contact }}?subject=CampusConnect: Welcome to the team for {{ post.title|urlencode }}!&body=Hi {{ req.sender.first_name|default:req.sender.username }}, I accepted your pitch on CampusConnect! Let's connect and build." 
                                                                    class="btn btn-sm btn-success py-1 px-3 fw-semibold">
                                                                     <i class="bi bi-envelope-fill me-1"></i> Email {{ req.sender.first_name|default:req.sender.username }}
                                                                 </a>
@@ -435,6 +495,57 @@
                                                                 </a>
                                                             {% endif %}
                                                         </div>
+                                                    </div>
+
+                                                    <!-- 1-on-1 Private Chat Thread between Coordinator and This Applicant -->
+                                                    <div class="mt-3 pt-3 border-top border-secondary border-opacity-15">
+                                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                                            <span class="text-white-50 small fw-bold" style="font-size: 0.72rem;">
+                                                                <i class="bi bi-chat-left-text-fill text-info me-1"></i> Private Discussion with {{ req.sender.get_full_name|default:req.sender.username }}
+                                                            </span>
+                                                            <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-20" style="font-size: 0.68rem;">
+                                                                <i class="bi bi-shield-lock-fill me-1"></i> Private (Only you & {{ req.sender.first_name|default:req.sender.username }})
+                                                            </span>
+                                                        </div>
+
+                                                        {% if req.chat_messages.all %}
+                                                            <div class="p-2 rounded-3 bg-black bg-opacity-40 mb-2" style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;">
+                                                                {% for chat in req.chat_messages.all %}
+                                                                    {% if chat.sender == user %}
+                                                                        <div class="p-2 rounded-3 bg-primary bg-opacity-25 border border-primary border-opacity-35 text-start align-self-end" style="max-width: 88%;">
+                                                                            <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
+                                                                                <span class="text-primary fw-bold" style="font-size: 0.7rem;">You (Team Lead)</span>
+                                                                                <span class="text-white-50" style="font-size: 0.65rem;">{{ chat.created_at|timesince }} ago</span>
+                                                                            </div>
+                                                                            <div class="text-white small" style="white-space: pre-wrap; font-size: 0.8rem;">{{ chat.message }}</div>
+                                                                        </div>
+                                                                    {% else %}
+                                                                        <div class="p-2 rounded-3 bg-secondary bg-opacity-20 border border-secondary border-opacity-30 text-start align-self-start" style="max-width: 88%;">
+                                                                            <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
+                                                                                <span class="text-info fw-bold" style="font-size: 0.7rem;">{{ req.sender.get_full_name|default:req.sender.username }}</span>
+                                                                                <span class="text-white-50" style="font-size: 0.65rem;">{{ chat.created_at|timesince }} ago</span>
+                                                                            </div>
+                                                                            <div class="text-white small" style="white-space: pre-wrap; font-size: 0.8rem;">{{ chat.message }}</div>
+                                                                        </div>
+                                                                    {% endif %}
+                                                                {% endfor %}
+                                                            </div>
+                                                        {% endif %}
+
+                                                        <!-- Quick Reply Form -->
+                                                        <form method="POST" action="{% url 'team_collab_send_message' req.id %}">
+                                                            {% csrf_token %}
+                                                            <div class="input-group input-group-sm">
+                                                                <input type="text" name="message" class="form-control form-control-custom text-white" 
+                                                                       placeholder="Reply privately to {{ req.sender.first_name|default:req.sender.username }}..." required autocomplete="off" style="font-size: 0.8rem;">
+                                                                <button class="btn btn-primary-custom px-3" type="submit">
+                                                                    <i class="bi bi-send-fill me-1"></i> Send Reply
+                                                                </button>
+                                                            </div>
+                                                            <small class="text-white-50 d-block mt-1" style="font-size: 0.7rem;">
+                                                                <i class="bi bi-lock-fill text-success me-1"></i> Strictly private: only {{ req.sender.first_name|default:req.sender.username }} will receive this message.
+                                                            </small>
+                                                        </form>
                                                     </div>
                                                 </div>
                                             {% endfor %}
@@ -591,13 +702,17 @@
 
                                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 small pt-2 border-top border-secondary border-opacity-10">
                                         <div class="text-white-50">
-                                            Your Contact Email: <strong class="text-white">{{ sent.sender_contact }}</strong>
+                                            Your Contact Email: <strong class="text-white">{{ sent.clean_sender_contact }}</strong>
                                         </div>
                                         <div>
                                             {% if sent.status == 'ACCEPTED' %}
-                                                <a href="mailto:{{ sent.post.contact_handle|default:sent.post.user.email }}?subject=CampusConnect: Let's team up for {{ sent.post.title|urlencode }}&body=Hi {{ sent.post.user.first_name|default:sent.post.user.username }}, thanks for accepting my pitch on CampusConnect! Let's connect and start building." 
-                                                   class="btn btn-sm btn-success fw-bold py-1 px-3">
-                                                    <i class="bi bi-envelope-fill me-1"></i> Send Email to {{ sent.post.user.first_name|default:sent.post.user.username }}
+                                                <button type="button" class="btn btn-sm btn-primary-custom fw-bold py-1 px-3 me-1" 
+                                                        data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#myRequestStatusModal{{ sent.post_id }}">
+                                                    <i class="bi bi-chat-dots-fill me-1"></i> Private Discussion
+                                                </button>
+                                                <a href="mailto:{{ sent.post.clean_contact_handle|default:sent.post.user.email }}?subject=CampusConnect: Let's team up for {{ sent.post.title|urlencode }}&body=Hi {{ sent.post.user.first_name|default:sent.post.user.username }}, thanks for accepting my pitch on CampusConnect! Let's connect and start building." 
+                                                   class="btn btn-sm btn-outline-success fw-bold py-1 px-2">
+                                                    <i class="bi bi-envelope-fill me-1"></i> Email
                                                 </a>
                                             {% elif sent.status == 'PENDING' %}
                                                 <span class="text-warning small"><i class="bi bi-hourglass-split me-1"></i> Awaiting leader response</span>

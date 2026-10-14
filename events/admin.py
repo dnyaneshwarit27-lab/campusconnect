@@ -10,6 +10,7 @@ from .models import (
     TeamFinderPost,
     EventFeedback,
     TeamCollaborationRequest,
+    TeamCollabChatMessage,
     EventCoordinatorTeam,
 )
 
@@ -88,5 +89,12 @@ class EventCoordinatorTeamAdmin(admin.ModelAdmin):
     list_display = ('event', 'user', 'role', 'status', 'joined_at')
     list_filter = ('role', 'status', 'event')
     search_fields = ('event__title', 'user__username', 'user__email', 'custom_role', 'pitch_note')
+
+
+@admin.register(TeamCollabChatMessage)
+class TeamCollabChatMessageAdmin(admin.ModelAdmin):
+    list_display = ('collab_request', 'sender', 'message', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('sender__username', 'message', 'collab_request__post__title')
 
 

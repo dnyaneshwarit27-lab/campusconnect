@@ -23,6 +23,7 @@ from .models import (
     TeamFinderPost,
     EventFeedback,
     TeamCollaborationRequest,
+    TeamCollabChatMessage,
     EventCoordinatorTeam,
 )
 from .utils import generate_qr_base64
@@ -37,6 +38,7 @@ from .mongodb import (
     mongo_sync_question,
     mongo_sync_announcement,
     mongo_sync_event_team,
+    mongo_sync_collab_chat,
 )
 
 
@@ -377,13 +379,21 @@ def team_finder(request):
     Hackathon Team Finder:
     Browse real student postings, connect with other students, or post a request for teammates.
     """
-    posts = TeamFinderPost.objects.all().select_related('user', 'user__profile', 'event').prefetch_related('collaboration_requests', 'collaboration_requests__sender', 'collaboration_requests__sender__profile')
+    posts = TeamFinderPost.objects.all().select_related('user', 'user__profile', 'event').prefetch_related(
+        'collaboration_requests',
+        'collaboration_requests__sender',
+        'collaboration_requests__sender__profile',
+        'collaboration_requests__chat_messages',
+        'collaboration_requests__chat_messages__sender'
+    )
     events = Event.objects.filter(is_published=True, is_team_event=True, end_date__gte=timezone.now())
 
     # Build mapping of current user's sent pitches/requests
     my_sent_requests = []
     if request.user.is_authenticated:
-        my_sent_requests = list(TeamCollaborationRequest.objects.filter(sender=request.user).select_related('post', 'post__user', 'post__user__profile', 'post__event'))
+        my_sent_requests = list(TeamCollaborationRequest.objects.filter(sender=request.user).select_related(
+            'post', 'post__user', 'post__user__profile', 'post__event'
+        ).prefetch_related('chat_messages', 'chat_messages__sender'))
         sent_dict = {req.post_id: req for req in my_sent_requests}
         for post in posts:
             post.my_request = sent_dict.get(post.id)
@@ -559,6 +569,48 @@ def team_post_toggle_status(request, post_id):
     status_label = "Open" if post.is_open else "Closed (Team Formed)"
     messages.success(request, f"Post status updated to: {status_label}!")
     return redirect('team_finder')
+
+
+@login_required
+def team_collab_send_message(request, req_id):
+    """
+    Send a direct 1-on-1 private collaboration message.
+    Strictly isolated between:
+    - collab_req.sender (applicant who sent the pitch)
+    - collab_req.post.user (post author / team leader)
+    No other users or applicants can access or view this conversation.
+    """
+    if request.method != 'POST':
+        return redirect('team_finder')
+
+    collab_req = get_object_or_404(TeamCollaborationRequest, id=req_id)
+
+    # Strict Privacy Check: Only applicant or post author or admin
+    is_applicant = (collab_req.sender == request.user)
+    is_leader = (collab_req.post.user == request.user)
+
+    if not (is_applicant or is_leader or request.user.is_superuser):
+        messages.error(request, "Access denied. This is a private collaboration discussion.")
+        return redirect('team_finder')
+
+    msg_text = request.POST.get('message', '').strip()
+    if not msg_text:
+        messages.warning(request, "Message cannot be empty.")
+        return redirect('team_finder')
+
+    chat_msg = TeamCollabChatMessage.objects.create(
+        collab_request=collab_req,
+        sender=request.user,
+        message=msg_text
+    )
+
+    # Synchronize to MongoDB Atlas 'collaboration_chats'
+    mongo_sync_collab_chat(chat_msg)
+
+    recipient_name = (collab_req.post.user.get_full_name() or collab_req.post.user.username) if is_applicant else (collab_req.sender.get_full_name() or collab_req.sender.username)
+    messages.success(request, f"Private message sent to {recipient_name}!")
+    return redirect('team_finder')
+
 
 
 

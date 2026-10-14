@@ -18,6 +18,7 @@ urlpatterns = [
     path('team-finder/', views.team_finder, name='team_finder'),
     path('team-finder/connect/<int:post_id>/', views.team_connect, name='team_connect'),
     path('team-finder/request/<int:req_id>/<str:new_status>/', views.team_request_status, name='team_request_status'),
+    path('team-finder/request/<int:req_id>/message/', views.team_collab_send_message, name='team_collab_send_message'),
     path('team-finder/post/<int:post_id>/delete/', views.team_post_delete, name='team_post_delete'),
     path('team-finder/post/<int:post_id>/toggle-status/', views.team_post_toggle_status, name='team_post_toggle_status'),
     

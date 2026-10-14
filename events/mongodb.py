@@ -417,9 +417,35 @@ def mongo_sync_event_team(team_member):
         return False
 
 
+def mongo_sync_collab_chat(chat_obj):
+    """
+    Inserts private 1-on-1 collaboration chat message into MongoDB Atlas 'collaboration_chats' collection.
+    """
+    db = get_mongo_db()
+    if db is None:
+        return False
+    try:
+        col = db['collaboration_chats']
+        col.insert_one({
+            'chat_message_id': chat_obj.id,
+            'collab_request_id': chat_obj.collab_request_id,
+            'post_id': chat_obj.collab_request.post_id,
+            'post_title': chat_obj.collab_request.post.title,
+            'sender_id': chat_obj.sender.id,
+            'sender_username': chat_obj.sender.username,
+            'sender_name': chat_obj.sender.get_full_name() or chat_obj.sender.username,
+            'message': chat_obj.message,
+            'created_at': chat_obj.created_at.isoformat()
+        })
+        return True
+    except Exception as e:
+        logger.warning(f"Failed to sync collab chat message {chat_obj.id} to MongoDB Atlas: {e}")
+        return False
+
+
 def get_atlas_collection_counts():
     """
-    Returns actual document counts for all 9 collections in MongoDB Atlas.
+    Returns actual document counts for Atlas collections.
     """
     counts = {
         'users': 0,
@@ -431,6 +457,7 @@ def get_atlas_collection_counts():
         'announcements': 0,
         'feedback': 0,
         'event_teams': 0,
+        'collaboration_chats': 0,
     }
 
     db = get_mongo_db()

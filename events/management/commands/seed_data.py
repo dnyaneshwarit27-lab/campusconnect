@@ -568,7 +568,7 @@ DesignForge tasks participants with redesigning digital student experiences. You
                 "description": "We are building an intelligent campus companion app with automated timetable sync and cafeteria queue prediction. We have backend ready with Django & PostgreSQL, looking for someone skilled in Figma or Flutter/React Native.",
                 "skills_offered": "Python, Django, Machine Learning, FastAPIs",
                 "skills_needed": "Figma, React Native or Flutter, Tailwind",
-                "contact_handle": "aarav.dev@discord / +91 91234 56789",
+                "contact_handle": "aarav.dev@gmail.com / +91 91234 56789",
                 "is_open": True
             }
         )

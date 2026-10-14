@@ -362,7 +362,7 @@ Languages: C++, Java, Python, Go.""",
                 "description": "We are building an automated campus companion app with AI attendance sync. Backend is in Django & MongoDB, looking for mobile or frontend dev.",
                 "skills_offered": "Python, Django, MongoDB, Machine Learning",
                 "skills_needed": "Flutter, React Native, UI/UX",
-                "contact_handle": "dnyaneshwari@discord / dnyaneshwarit27@gmail.com",
+                "contact_handle": "dnyaneshwarit27@gmail.com",
                 "is_open": True
             }
         )

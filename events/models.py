@@ -286,6 +286,14 @@ class TeamFinderPost(models.Model):
     def __str__(self):
         return f"{self.title} by {self.user.username}"
 
+    @property
+    def clean_contact_handle(self):
+        val = self.contact_handle or ""
+        if "discord" in val.lower():
+            parts = [p.strip() for p in val.split('/') if 'discord' not in p.lower()]
+            return " / ".join(parts) if parts else (self.user.email or val)
+        return val
+
 
 class EventFeedback(models.Model):
     registration = models.OneToOneField(Registration, on_delete=models.CASCADE, related_name='feedback')
@@ -315,6 +323,27 @@ class TeamCollaborationRequest(models.Model):
 
     def __str__(self):
         return f"Collab Request from {self.sender.username} on '{self.post.title}'"
+
+    @property
+    def clean_sender_contact(self):
+        val = self.sender_contact or ""
+        if "discord" in val.lower():
+            parts = [p.strip() for p in val.split('/') if 'discord' not in p.lower()]
+            return " / ".join(parts) if parts else (self.sender.email or val)
+        return val
+
+
+class TeamCollabChatMessage(models.Model):
+    collab_request = models.ForeignKey(TeamCollaborationRequest, on_delete=models.CASCADE, related_name='chat_messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_collab_chat_messages')
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Collab #{self.collab_request_id} Msg by {self.sender.username}"
 
 
 class EventCoordinatorTeam(models.Model):
