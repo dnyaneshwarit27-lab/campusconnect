@@ -1010,15 +1010,28 @@ def api_scan_ticket(request):
         if not token_str:
             return JsonResponse({'success': False, 'message': 'QR Token is missing.'}, status=400)
 
-        # Parse UUID
+        # Parse UUID or short pass code
+        token_uuid = None
         try:
             token_uuid = uuid.UUID(token_str)
         except ValueError:
-            return JsonResponse({'success': False, 'message': 'Invalid QR code format. Not a recognized pass token.'}, status=400)
+            pass
 
-        registration = Registration.objects.select_related('user', 'user__profile', 'event').filter(
-            registration_token=token_uuid
-        ).first()
+        if token_uuid:
+            registration = Registration.objects.select_related('user', 'user__profile', 'event').filter(
+                registration_token=token_uuid
+            ).first()
+        else:
+            clean_token = token_str.replace('-', '').strip().lower()
+            registration = None
+            if len(clean_token) >= 6:
+                # Find matching registration by short code / prefix
+                for reg in Registration.objects.select_related('user', 'user__profile', 'event').filter(event_id=event_id) if event_id else Registration.objects.select_related('user', 'user__profile', 'event').all():
+                    if str(reg.registration_token).replace('-', '').lower().startswith(clean_token):
+                        registration = reg
+                        break
+            else:
+                return JsonResponse({'success': False, 'message': 'Invalid pass code format. Please enter at least 6 characters.'}, status=400)
 
         if not registration:
             return JsonResponse({
