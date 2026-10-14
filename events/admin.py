@@ -9,6 +9,7 @@ from .models import (
     Announcement,
     TeamFinderPost,
     EventFeedback,
+    TeamCollaborationRequest,
 )
 
 
@@ -72,3 +73,11 @@ class TeamFinderPostAdmin(admin.ModelAdmin):
 class EventFeedbackAdmin(admin.ModelAdmin):
     list_display = ('registration', 'rating', 'created_at')
     list_filter = ('rating',)
+
+
+@admin.register(TeamCollaborationRequest)
+class TeamCollaborationRequestAdmin(admin.ModelAdmin):
+    list_display = ('post', 'sender', 'sender_contact', 'status', 'created_at')
+    list_filter = ('status', 'created_at')
+    search_fields = ('post__title', 'sender__username', 'sender_contact', 'message')
+

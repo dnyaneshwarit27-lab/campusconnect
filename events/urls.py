@@ -16,6 +16,8 @@ urlpatterns = [
     
     # Community & Team Finder
     path('team-finder/', views.team_finder, name='team_finder'),
+    path('team-finder/connect/<int:post_id>/', views.team_connect, name='team_connect'),
+    path('team-finder/request/<int:req_id>/<str:new_status>/', views.team_request_status, name='team_request_status'),
     
     # Coordinator Portal & Scanning
     path('coordinator/', views.coordinator_dashboard, name='coordinator_dashboard'),

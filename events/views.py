@@ -22,9 +22,11 @@ from .models import (
     Announcement,
     TeamFinderPost,
     EventFeedback,
+    TeamCollaborationRequest,
 )
 from .utils import generate_qr_base64
 from .mongodb import (
+    get_mongo_db,
     check_mongo_connection,
     get_atlas_collection_counts,
     mongo_sync_user,
@@ -359,7 +361,7 @@ def team_finder(request):
     Hackathon Team Finder:
     Browse real student postings, connect with other students, or post a request for teammates.
     """
-    posts = TeamFinderPost.objects.filter(is_open=True).select_related('user', 'event')
+    posts = TeamFinderPost.objects.filter(is_open=True).select_related('user', 'user__profile', 'event').prefetch_related('collaboration_requests', 'collaboration_requests__sender', 'collaboration_requests__sender__profile')
     events = Event.objects.filter(is_published=True, is_team_event=True, end_date__gte=timezone.now())
 
     query = request.GET.get('q', '').strip()
@@ -402,6 +404,81 @@ def team_finder(request):
         'query': query,
     }
     return render(request, 'events/team_finder.html', context)
+
+
+@login_required
+def team_connect(request, post_id):
+    """
+    Submit a real collaboration pitch/request to a team finder post.
+    Synchronizes with MongoDB Atlas.
+    """
+    if request.method != 'POST':
+        return redirect('team_finder')
+
+    post = get_object_or_404(TeamFinderPost, id=post_id)
+
+    if post.user == request.user:
+        messages.warning(request, "This is your own team request!")
+        return redirect('team_finder')
+
+    message = request.POST.get('message', '').strip()
+    sender_contact = request.POST.get('sender_contact', '').strip()
+
+    if not message:
+        messages.error(request, "Please write a short pitch or intro message.")
+        return redirect('team_finder')
+
+    if not sender_contact:
+        profile = getattr(request.user, 'profile', None)
+        sender_contact = request.user.email or (profile.phone if profile and profile.phone else '') or request.user.username
+
+    req = TeamCollaborationRequest.objects.create(
+        post=post,
+        sender=request.user,
+        message=message,
+        sender_contact=sender_contact,
+        status='PENDING'
+    )
+
+    # Sync to MongoDB Atlas 'collaboration_requests' & 'teams'
+    db = get_mongo_db()
+    if db is not None:
+        try:
+            col = db['collaboration_requests']
+            col.insert_one({
+                'post_id': post.id,
+                'post_title': post.title,
+                'event_title': post.event.title if post.event else 'General Hackathon',
+                'recipient_username': post.user.username,
+                'recipient_name': post.user.get_full_name() or post.user.username,
+                'sender_username': request.user.username,
+                'sender_name': request.user.get_full_name() or request.user.username,
+                'sender_email': request.user.email,
+                'sender_contact': sender_contact,
+                'message': message,
+                'status': 'PENDING',
+                'created_at': timezone.now().isoformat()
+            })
+        except Exception as e:
+            pass
+
+    recipient_name = post.user.get_full_name() or post.user.username
+    messages.success(request, f"Collaboration request sent to {recipient_name}! They can now review your pitch and contact you.")
+    return redirect('team_finder')
+
+
+@login_required
+def team_request_status(request, req_id, new_status):
+    """
+    Team post owner can mark collaboration request as ACCEPTED or DECLINED.
+    """
+    collab_req = get_object_or_404(TeamCollaborationRequest, id=req_id, post__user=request.user)
+    if new_status in ['ACCEPTED', 'DECLINED']:
+        collab_req.status = new_status
+        collab_req.save()
+        messages.success(request, f"Request from {collab_req.sender.get_full_name() or collab_req.sender.username} marked as {new_status.capitalize()}!")
+    return redirect('team_finder')
+
 
 
 # ==========================================

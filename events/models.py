@@ -260,3 +260,24 @@ class EventFeedback(models.Model):
 
     def __str__(self):
         return f"Feedback {self.rating}* by {self.registration.user.username} for {self.registration.event.title}"
+
+
+class TeamCollaborationRequest(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('ACCEPTED', 'Accepted'),
+        ('DECLINED', 'Declined'),
+    ]
+    post = models.ForeignKey(TeamFinderPost, on_delete=models.CASCADE, related_name='collaboration_requests')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_collaboration_requests')
+    message = models.TextField()
+    sender_contact = models.CharField(max_length=150, help_text="Email, Phone, Discord or Telegram")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Collab Request from {self.sender.username} on '{self.post.title}'"
+
