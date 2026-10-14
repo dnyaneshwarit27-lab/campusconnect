@@ -241,7 +241,7 @@ class TeamFinderPost(models.Model):
     description = models.TextField()
     skills_offered = models.CharField(max_length=255, help_text="Skills you bring, e.g. Backend, UI/UX")
     skills_needed = models.CharField(max_length=255, help_text="Skills you are looking for")
-    contact_handle = models.CharField(max_length=150, help_text="Discord / WhatsApp / Email")
+    contact_handle = models.CharField(max_length=150, help_text="Contact Email")
     is_open = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -271,7 +271,7 @@ class TeamCollaborationRequest(models.Model):
     post = models.ForeignKey(TeamFinderPost, on_delete=models.CASCADE, related_name='collaboration_requests')
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_collaboration_requests')
     message = models.TextField()
-    sender_contact = models.CharField(max_length=150, help_text="Email, Phone, Discord or Telegram")
+    sender_contact = models.CharField(max_length=150, help_text="Contact Email")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -174,10 +174,10 @@
                                                       placeholder="Introduce yourself! What skills do you bring and why are you excited to build this?">Hi {{ post.user.first_name|default:post.user.username }}, I saw your post looking for {{ post.skills_needed }} for {{ post.event.title|default:'the hackathon' }}. I'd love to team up! My skills include {{ user.profile.skills|default:'relevant tech stack' }}.</textarea>
                                         </div>
                                         <div class="mb-3">
-                                            <label class="form-label text-white small fw-bold">Your Contact Handle / Phone / Discord</label>
-                                            <input type="text" name="sender_contact" class="form-control form-control-custom" 
-                                                   value="{{ user.email }}{% if user.profile.phone %} / {{ user.profile.phone }}{% endif %}" 
-                                                   placeholder="e.g. {{ user.email }} or Discord username" required>
+                                            <label class="form-label text-white small fw-bold">Your Contact Email *</label>
+                                            <input type="email" name="sender_contact" class="form-control form-control-custom" 
+                                                   value="{{ user.email }}" 
+                                                   placeholder="e.g. {{ user.email|default:'student@gmail.com' }}" required>
                                         </div>
                                         <div class="d-flex justify-content-end gap-2">
                                             <button type="button" class="btn btn-glass" data-bs-dismiss="modal">Close</button>
@@ -347,9 +347,10 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label text-white small fw-bold">Contact Handle / Email / Discord *</label>
-                        <input type="text" name="contact_handle" class="form-control form-control-custom" 
-                               placeholder="e.g. student#1234 on Discord or student@gmail.com" required>
+                        <label class="form-label text-white small fw-bold">Contact / Email *</label>
+                        <input type="email" name="contact_handle" class="form-control form-control-custom" 
+                               value="{{ user.email }}"
+                               placeholder="e.g. {{ user.email|default:'student@gmail.com' }}" required>
                     </div>
                 </div>
                 <div class="modal-footer border-secondary border-opacity-10">
