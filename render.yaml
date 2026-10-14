@@ -12,6 +12,6 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: MONGODB_URI
-        sync: false
+        value: "mongodb+srv://spacece_app_user:dnyaneshwarit%4027@spacece-newsletter.mtyenck.mongodb.net/?appName=spacece-newsletter"
       - key: MONGODB_DB_NAME
         value: campusconnect_db

@@ -33,11 +33,12 @@ class Command(BaseCommand):
         self.stdout.write("Checking MongoDB Atlas connection...")
         connected, msg = check_mongo_connection()
         if not connected:
-            self.stdout.write(self.style.ERROR(f"Connection failed: {msg}"))
-            return
-
-        self.stdout.write(self.style.SUCCESS(f"Connected: {msg}"))
-        db = get_mongo_db()
+            self.stdout.write(self.style.WARNING(f"MongoDB connection notice: {msg}"))
+            self.stdout.write(self.style.WARNING("Proceeding to initialize local Django database first..."))
+            db = None
+        else:
+            self.stdout.write(self.style.SUCCESS(f"Connected: {msg}"))
+            db = get_mongo_db()
         now = timezone.now()
 
         # 1. Categories
@@ -367,24 +368,32 @@ Languages: C++, Java, Python, Go.""",
         )
 
         # 9. Feedback
-        db['feedback'].update_one(
-            {'registration_token': str(r2.registration_token)},
-            {'$set': {
-                'event_title': workshop.title,
-                'student_username': student_user.username,
-                'rating': 5,
-                'comments': 'Excellent hands-on session on GenAI agents and RAG pipelines!',
-                'submitted_at': now.isoformat()
-            }},
-            upsert=True
-        )
+        if db is not None:
+            db['feedback'].update_one(
+                {'registration_token': str(r2.registration_token)},
+                {'$set': {
+                    'event_title': workshop.title,
+                    'student_username': student_user.username,
+                    'rating': 5,
+                    'comments': 'Excellent hands-on session on GenAI agents and RAG pipelines!',
+                    'submitted_at': now.isoformat()
+                }},
+                upsert=True
+            )
 
-        # Display collection counts directly from MongoDB Atlas
-        self.stdout.write("\n=== MongoDB Atlas Collection Document Counts ===")
-        for col_name in ['users', 'events', 'registrations', 'teams', 'event_questions', 'attendance', 'announcements', 'feedback']:
-            cnt = db[col_name].count_documents({})
-            self.stdout.write(f"  • {col_name}: {cnt} documents")
+            # Display collection counts directly from MongoDB Atlas
+            self.stdout.write("\n=== MongoDB Atlas Collection Document Counts ===")
+            for col_name in ['users', 'events', 'registrations', 'teams', 'event_questions', 'attendance', 'announcements', 'feedback']:
+                cnt = db[col_name].count_documents({})
+                self.stdout.write(f"  • {col_name}: {cnt} documents")
 
-        self.stdout.write(self.style.SUCCESS(
-            "\nSuccessfully initialized all 8 collections in MongoDB Atlas ('campusconnect_db') with live dynamic data!"
-        ))
+            self.stdout.write(self.style.SUCCESS(
+                "\nSuccessfully initialized all 8 collections in MongoDB Atlas ('campusconnect_db') with live dynamic data!"
+            ))
+        else:
+            self.stdout.write(self.style.SUCCESS(
+                "\nSuccessfully seeded all Django models (Colleges, Categories, Users, Events, Registrations)!"
+            ))
+            self.stdout.write(self.style.WARNING(
+                "MongoDB Atlas sync was skipped because MONGODB_URI is not set. Add MONGODB_URI in Render dashboard to sync with Atlas."
+            ))

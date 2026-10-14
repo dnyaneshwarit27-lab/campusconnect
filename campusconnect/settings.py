@@ -32,7 +32,7 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = ['*']
 
 # MongoDB Atlas Settings
-MONGODB_URI = os.environ.get('MONGODB_URI', '')
+MONGODB_URI = os.environ.get('MONGODB_URI', 'mongodb+srv://spacece_app_user:dnyaneshwarit%4027@spacece-newsletter.mtyenck.mongodb.net/?appName=spacece-newsletter')
 MONGODB_DB_NAME = os.environ.get('MONGODB_DB_NAME', 'campusconnect_db')
 
 
