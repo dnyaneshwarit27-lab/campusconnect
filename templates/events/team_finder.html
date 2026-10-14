@@ -151,16 +151,23 @@
                                 <!-- Fast Reach Out Channels -->
                                 <div class="mb-3">
                                     <label class="form-label text-white-50 small fw-bold text-uppercase" style="font-size: 0.72rem;">Direct Contact Channels</label>
-                                    <div class="d-flex flex-wrap gap-2">
+                                    <div class="d-flex flex-column gap-2">
                                         {% if post.user.email %}
                                             <a href="mailto:{{ post.user.email }}?subject=CampusConnect:%20Team%20Collaboration%20for%20{{ post.title|urlencode }}&body=Hi%20{{ post.user.first_name }},%20I%20saw%20your%20teammate%20post%20on%20CampusConnect%20and%20would%20love%20to%20collaborate!" 
-                                               class="btn btn-sm btn-glass text-info">
-                                                <i class="bi bi-envelope-fill me-1"></i> Send Email
+                                               class="btn btn-sm btn-glass text-info text-start d-flex align-items-center justify-content-between py-2 px-3">
+                                                <span><i class="bi bi-envelope-fill me-2"></i> Send Direct Email</span>
+                                                <span class="small text-white-50">{{ post.user.email }}</span>
                                             </a>
                                         {% endif %}
-                                        <button type="button" class="btn btn-sm btn-glass text-warning" onclick="copyContactHandle('{{ post.contact_handle|escapejs }}', this)">
-                                            <i class="bi bi-clipboard-check me-1"></i> Copy: {{ post.contact_handle }}
-                                        </button>
+                                        <div class="d-flex align-items-center justify-content-between p-2 px-3 rounded-3 bg-dark bg-opacity-50 border border-secondary border-opacity-20">
+                                            <div class="small text-truncate me-2">
+                                                <span class="text-white-50 me-1"><i class="bi bi-chat-quote-fill text-primary me-1"></i> Handle:</span>
+                                                <span class="text-white fw-semibold">{{ post.contact_handle }}</span>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-glass text-warning py-1 px-2 flex-shrink-0" onclick="copyContactHandle('{{ post.contact_handle|escapejs }}', this)">
+                                                <i class="bi bi-clipboard me-1"></i> Copy
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
