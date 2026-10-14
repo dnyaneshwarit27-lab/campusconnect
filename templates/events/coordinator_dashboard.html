@@ -18,6 +18,23 @@
         </a>
     </div>
 
+    {% if pending_join_requests_count > 0 %}
+        <!-- Action Required: Pending Join Requests Banner -->
+        <div class="p-3 rounded-4 mb-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3" 
+             style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.1)); border: 1px solid rgba(245, 158, 11, 0.45);">
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-2 rounded-circle bg-warning text-dark fs-5">
+                    <i class="bi bi-bell-fill"></i>
+                </div>
+                <div>
+                    <h6 class="text-white fw-bold mb-0">You have {{ pending_join_requests_count }} coordinator join request(s) awaiting review!</h6>
+                    <small class="text-white-50">Coordinators want to join your organizing team and help with QR scanning, attendance, or Q&A.</small>
+                </div>
+            </div>
+            <span class="badge bg-warning text-dark px-3 py-2 fw-bold">Review below in Event Desk</span>
+        </div>
+    {% endif %}
+
     <!-- KPI Metric Cards -->
     <div class="row g-3 mb-5">
         <div class="col-6 col-lg-3">
@@ -51,11 +68,14 @@
     </div>
 
     <!-- Coordinated Events List -->
-    <div class="glass-card p-4 p-md-5">
+    <div class="glass-card p-4 p-md-5 mb-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h4 class="text-white fw-bold mb-0">
-                <i class="bi bi-table text-primary me-2"></i> Your Coordinated Events
-            </h4>
+            <div>
+                <h4 class="text-white fw-bold mb-0">
+                    <i class="bi bi-table text-primary me-2"></i> Your Coordinated Events
+                </h4>
+                <p class="text-white-50 small mb-0 mt-1">Events where you are the Lead Coordinator or an Approved Organizing Team Member</p>
+            </div>
         </div>
 
         {% if events %}
@@ -64,6 +84,7 @@
                     <thead>
                         <tr class="text-white-50 small text-uppercase" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <th>Event Name</th>
+                            <th>Your Role</th>
                             <th>Date & Mode</th>
                             <th>Registrations</th>
                             <th>Check-In Status</th>
@@ -80,6 +101,22 @@
                                     </span>
                                     {% if event.is_team_event %}
                                         <span class="badge bg-info bg-opacity-20 text-info small">Team Event</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if event.is_my_lead %}
+                                        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30 small">
+                                            <i class="bi bi-star-fill me-1"></i> Lead Coordinator
+                                        </span>
+                                        {% if event.pending_count > 0 %}
+                                            <span class="badge bg-danger rounded-pill ms-1" title="Pending team join requests">
+                                                {{ event.pending_count }} Pending
+                                            </span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-30 small">
+                                            <i class="bi bi-person-check-fill me-1"></i> {{ event.my_role_label }}
+                                        </span>
                                     {% endif %}
                                 </td>
                                 <td>
@@ -103,7 +140,7 @@
                                         <a href="{% url 'coordinator_scanner' event.slug %}" class="btn btn-sm btn-primary-custom py-1 px-3" title="Launch QR Scanner">
                                             <i class="bi bi-qr-code-scan me-1"></i> Launch Scanner
                                         </a>
-                                        <a href="{% url 'coordinator_manage_event' event.slug %}" class="btn btn-sm btn-glass py-1 px-2" title="Manage Roster & Q&A">
+                                        <a href="{% url 'coordinator_manage_event' event.slug %}" class="btn btn-sm btn-glass py-1 px-2" title="Manage Roster & Team">
                                             <i class="bi bi-gear me-1"></i> Manage
                                         </a>
                                         <a href="{% url 'event_detail' event.slug %}" class="btn btn-sm btn-glass py-1 px-2" title="View Public Page">
@@ -119,11 +156,58 @@
         {% else %}
             <div class="text-center py-5">
                 <i class="bi bi-calendar-plus text-white-50 display-4 mb-3"></i>
-                <h5 class="text-white fw-bold">No events hosted yet</h5>
-                <p class="text-white-50 small mb-3">Host a new hackathon, technical workshop, or coding challenge to start accepting registrations.</p>
+                <h5 class="text-white fw-bold">No events coordinated yet</h5>
+                <p class="text-white-50 small mb-3">Host a new hackathon or join an existing event organizing team below.</p>
                 <a href="{% url 'coordinator_create_event' %}" class="btn btn-primary-custom">Host Event</a>
             </div>
         {% endif %}
     </div>
+
+    <!-- Available Events to Join Organizing Team -->
+    {% if available_events_to_join %}
+        <div class="glass-card p-4 p-md-5">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h4 class="text-white fw-bold mb-0">
+                        <i class="bi bi-person-plus text-info me-2"></i> Join Other Event Teams
+                    </h4>
+                    <p class="text-white-50 small mb-0 mt-1">Self-service collaboration: volunteer as QR scanner in-charge or co-coordinator on other campus events</p>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                {% for ev in available_events_to_join %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="p-4 rounded-3 bg-dark bg-opacity-50 border border-secondary border-opacity-20 h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <span class="badge bg-primary bg-opacity-20 text-white-50 border border-primary border-opacity-30 small">
+                                        {{ ev.category.name }}
+                                    </span>
+                                    <span class="text-white-50 small">{{ ev.start_date|date:"M d" }}</span>
+                                </div>
+                                <h6 class="text-white fw-bold mb-2">{{ ev.title }}</h6>
+                                <p class="text-white-50 small mb-3" style="font-size: 0.8rem; line-height: 1.5;">
+                                    {{ ev.short_description|truncatechars:100 }}
+                                </p>
+                                <div class="text-white-50 small mb-3" style="font-size: 0.75rem;">
+                                    Lead: <strong class="text-white">{{ ev.coordinator_name }}</strong> · {{ ev.department }}
+                                </div>
+                            </div>
+
+                            <div class="pt-3 border-top border-secondary border-opacity-10 d-flex gap-2">
+                                <a href="{% url 'event_detail' ev.slug %}" class="btn btn-sm btn-glass w-50 py-1">
+                                    View
+                                </a>
+                                <a href="{% url 'event_detail' ev.slug %}#joinEventTeamModal" class="btn btn-sm btn-outline-info w-50 py-1">
+                                    <i class="bi bi-person-plus me-1"></i> Join Team
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
 </div>
 {% endblock %}

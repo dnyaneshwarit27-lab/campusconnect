@@ -27,6 +27,165 @@
         </div>
     </div>
 
+    <!-- Organizing Team & Delegation Section -->
+    <div class="glass-card p-4 mb-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+            <div>
+                <h5 class="text-white fw-bold mb-1 d-flex align-items-center gap-2">
+                    <i class="bi bi-people-fill text-primary"></i> Event Organizing Team & Delegation
+                </h5>
+                <p class="text-white-50 small mb-0">Multi-coordinator collaboration: divide duties between QR scanning, attendance, and participant communications.</p>
+            </div>
+            <div>
+                <span class="badge bg-primary bg-opacity-20 text-white-50 border border-primary border-opacity-30">
+                    {{ approved_team|length }} Active Coordinator{{ approved_team|length|pluralize }}
+                </span>
+            </div>
+        </div>
+
+        {% if pending_team_requests %}
+            <!-- Pending Requests Alert Banner for Lead Coordinator -->
+            <div class="p-3 rounded-4 mb-4" style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35);">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span class="badge bg-warning text-dark fw-bold rounded-pill">ACTION REQUIRED</span>
+                    <h6 class="text-white fw-bold mb-0">Coordinators Requesting to Join Event Team ({{ pending_team_requests|length }})</h6>
+                </div>
+                
+                <div class="d-flex flex-column gap-2">
+                    {% for req in pending_team_requests %}
+                        <div class="p-3 rounded-3 bg-dark bg-opacity-70 border border-secondary border-opacity-25 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" 
+                                     style="width: 42px; height: 42px; background: {{ req.user.profile.avatar_color|default:'#6366f1' }}; font-size: 1rem;">
+                                    {{ req.user.first_name|default:req.user.username|slice:":1"|upper }}
+                                </div>
+                                <div>
+                                    <div class="text-white fw-bold">{{ req.user.get_full_name|default:req.user.username }}</div>
+                                    <div class="text-white-50 small">{{ req.user.profile.college }} · {{ req.user.profile.department }}</div>
+                                    <div class="mt-1">
+                                        <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-30 small">
+                                            Proposed Role: {{ req.get_role_display }}
+                                        </span>
+                                        {% if req.pitch_note %}
+                                            <span class="text-white-50 small ms-2 fst-italic">"{{ req.pitch_note }}"</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'coordinator_manage_team_request' req.id 'APPROVE' %}" class="btn btn-sm btn-success px-3">
+                                    <i class="bi bi-check-lg me-1"></i> Approve & Grant Access
+                                </a>
+                                <a href="{% url 'coordinator_manage_team_request' req.id 'REJECT' %}" class="btn btn-sm btn-outline-danger px-3">
+                                    <i class="bi bi-x-lg me-1"></i> Decline
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Active Coordinators Roster -->
+        <div class="row g-3">
+            {% for member in approved_team %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-3 rounded-3 bg-dark bg-opacity-50 border {% if member.role == 'LEAD' %}border-warning border-opacity-40{% else %}border-secondary border-opacity-20{% endif %} h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" 
+                                         style="width: 36px; height: 36px; background: {{ member.user.profile.avatar_color|default:'#4f46e5' }}; font-size: 0.95rem;">
+                                        {{ member.user.first_name|default:member.user.username|slice:":1"|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="text-white fw-bold small text-truncate" style="max-width: 140px;">
+                                            {{ member.user.get_full_name|default:member.user.username }}
+                                        </div>
+                                        <div class="text-white-50" style="font-size: 0.7rem;">{{ member.user.profile.college }}</div>
+                                    </div>
+                                </div>
+                                {% if member.role == 'LEAD' %}
+                                    <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-40 small">
+                                        <i class="bi bi-star-fill me-1"></i> Lead
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-30 small">
+                                        Active
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <span class="text-white-50 small d-block" style="font-size: 0.72rem;">ASSIGNED RESPONSIBILITY:</span>
+                                <div class="text-white fw-semibold small mt-1">
+                                    {% if member.role == 'ATTENDANCE' %}
+                                        <i class="bi bi-qr-code-scan text-success me-1"></i> Attendance & QR Scanner
+                                    {% elif member.role == 'COMMUNICATIONS' %}
+                                        <i class="bi bi-megaphone-fill text-warning me-1"></i> Q&A & Announcements
+                                    {% elif member.role == 'VOLUNTEER' %}
+                                        <i class="bi bi-hand-thumbs-up-fill text-primary me-1"></i> Event Volunteer
+                                    {% else %}
+                                        <i class="bi bi-shield-check text-info me-1"></i> {{ member.get_role_display }}
+                                    {% endif %}
+                                </div>
+                                {% if member.custom_role %}
+                                    <div class="text-white-50 small mt-1" style="font-size: 0.75rem;">Specialty: {{ member.custom_role }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center">
+                            <a href="mailto:{{ member.user.email }}" class="text-white-50 small hover-white text-decoration-none">
+                                <i class="bi bi-envelope me-1"></i> {{ member.user.email|truncatechars:20 }}
+                            </a>
+
+                            {% if is_lead and member.role != 'LEAD' %}
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-glass py-0 px-2 text-white-50" data-bs-toggle="dropdown">
+                                        <i class="bi bi-three-dots"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow">
+                                        <li><h6 class="dropdown-header">Reassign Duty</h6></li>
+                                        <li>
+                                            <form method="POST" action="{% url 'coordinator_update_team_role' member.id %}">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="role" value="ATTENDANCE">
+                                                <button type="submit" class="dropdown-item small"><i class="bi bi-qr-code-scan me-2 text-success"></i> QR Attendance In-Charge</button>
+                                            </form>
+                                        </li>
+                                        <li>
+                                            <form method="POST" action="{% url 'coordinator_update_team_role' member.id %}">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="role" value="COMMUNICATIONS">
+                                                <button type="submit" class="dropdown-item small"><i class="bi bi-megaphone me-2 text-warning"></i> Q&A & Announcements In-Charge</button>
+                                            </form>
+                                        </li>
+                                        <li>
+                                            <form method="POST" action="{% url 'coordinator_update_team_role' member.id %}">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="role" value="CO_COORDINATOR">
+                                                <button type="submit" class="dropdown-item small"><i class="bi bi-shield-check me-2 text-info"></i> Co-Coordinator</button>
+                                            </form>
+                                        </li>
+                                        <li><hr class="dropdown-divider border-secondary border-opacity-25"></li>
+                                        <li>
+                                            <a href="{% url 'coordinator_remove_team_member' member.id %}" 
+                                               class="dropdown-item small text-danger"
+                                               onclick="return confirm('Remove {{ member.user.get_full_name|default:member.user.username }} from the organizing team?');">
+                                                <i class="bi bi-person-x me-2"></i> Remove from Team
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
     <!-- Quick Stats -->
     <div class="row g-3 mb-4">
         <div class="col-md-4">

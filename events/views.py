@@ -23,6 +23,7 @@ from .models import (
     TeamFinderPost,
     EventFeedback,
     TeamCollaborationRequest,
+    EventCoordinatorTeam,
 )
 from .utils import generate_qr_base64
 from .mongodb import (
@@ -35,6 +36,7 @@ from .mongodb import (
     mongo_record_attendance,
     mongo_sync_question,
     mongo_sync_announcement,
+    mongo_sync_event_team,
 )
 
 
@@ -44,7 +46,9 @@ def is_coordinator_or_admin(user):
     if user.is_superuser or user.is_staff:
         return True
     profile = getattr(user, 'profile', None)
-    return profile and profile.is_coordinator
+    if profile and profile.is_coordinator:
+        return True
+    return EventCoordinatorTeam.objects.filter(user=user, status='APPROVED').exists()
 
 
 def is_admin_user(user):
@@ -181,6 +185,13 @@ def event_detail(request, slug):
         is_published=True
     ).exclude(id=event.id)[:3]
 
+    # Organizing Team data
+    approved_team = event.get_approved_team()
+    user_team_membership = event.get_user_team_membership(request.user) if request.user.is_authenticated else None
+    can_manage_event = event.is_user_coordinator(request.user) if request.user.is_authenticated else False
+    is_lead = (request.user.is_authenticated and (event.coordinator == request.user or request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.is_admin)))
+    pending_team_requests_count = event.get_pending_team_requests().count() if is_lead else 0
+
     context = {
         'event': event,
         'event_url': event_url,
@@ -190,6 +201,11 @@ def event_detail(request, slug):
         'questions': questions,
         'announcements': announcements,
         'related_events': related_events,
+        'approved_team': approved_team,
+        'user_team_membership': user_team_membership,
+        'can_manage_event': can_manage_event,
+        'is_lead': is_lead,
+        'pending_team_requests_count': pending_team_requests_count,
     }
     return render(request, 'events/event_detail.html', context)
 
@@ -556,17 +572,34 @@ def team_post_toggle_status(request, post_id):
 def coordinator_dashboard(request):
     """
     Coordinator Overview:
-    All metrics and lists are dynamic from actual database records.
+    Dynamic metrics and events list (Lead events + Co-Coordinating events).
+    Allows discovering and joining other event organizing teams.
     """
-    if request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.is_admin):
-        events = Event.objects.all().select_related('category', 'college')
+    is_admin = request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.is_admin)
+
+    if is_admin:
+        events = Event.objects.all().select_related('category', 'college', 'coordinator').prefetch_related('coordinator_team')
     else:
-        events = Event.objects.filter(coordinator=request.user).select_related('category', 'college')
+        events = Event.objects.filter(
+            Q(coordinator=request.user) |
+            Q(coordinator_team__user=request.user, coordinator_team__status='APPROVED')
+        ).distinct().select_related('category', 'college', 'coordinator').prefetch_related('coordinator_team')
+
+    # Tag user's role on each event
+    for ev in events:
+        if ev.coordinator == request.user:
+            ev.my_role_label = "Lead Coordinator"
+            ev.is_my_lead = True
+            ev.pending_count = ev.coordinator_team.filter(status='PENDING').count()
+        else:
+            team_rec = ev.coordinator_team.filter(user=request.user, status='APPROVED').first()
+            ev.my_role_label = team_rec.get_role_display() if team_rec else "Co-Coordinator"
+            ev.is_my_lead = False
+            ev.pending_count = 0
 
     total_events = events.count()
     total_registrations = Registration.objects.filter(event__in=events, status='CONFIRMED').count()
     total_checked_in = Registration.objects.filter(event__in=events, status='CONFIRMED', is_checked_in=True).count()
-    
     avg_attendance = round((total_checked_in / total_registrations * 100)) if total_registrations > 0 else 0
 
     unanswered_questions_count = EventQuestion.objects.filter(
@@ -574,11 +607,30 @@ def coordinator_dashboard(request):
         answer__isnull=True
     ).count() + EventQuestion.objects.filter(event__in=events, answer='').count()
 
+    # Discover other upcoming events available to join
+    my_event_ids = [e.id for e in events]
+    pending_event_ids = list(EventCoordinatorTeam.objects.filter(user=request.user, status='PENDING').values_list('event_id', flat=True))
+    available_events_to_join = Event.objects.filter(
+        is_published=True,
+        end_date__gte=timezone.now()
+    ).exclude(id__in=my_event_ids).exclude(id__in=pending_event_ids).select_related('category', 'college', 'coordinator')[:6]
+
+    # Total pending join requests count for current user
+    if is_admin:
+        pending_join_requests_count = EventCoordinatorTeam.objects.filter(status='PENDING').count()
+    else:
+        pending_join_requests_count = EventCoordinatorTeam.objects.filter(
+            event__coordinator=request.user,
+            status='PENDING'
+        ).count()
+
     # MongoDB Atlas Status
     mongo_connected, mongo_msg = check_mongo_connection()
 
     context = {
         'events': events,
+        'available_events_to_join': available_events_to_join,
+        'pending_join_requests_count': pending_join_requests_count,
         'stats': {
             'total_events': total_events,
             'total_registrations': total_registrations,
@@ -593,19 +645,175 @@ def coordinator_dashboard(request):
 
 
 @login_required
+def event_join_team(request, slug):
+    """
+    Self-service request to join an Event Organizing Team.
+    Coordinator/Student requests a specific responsibility (e.g. Attendance & QR, Q&A, Co-Coordinator).
+    Synchronizes to MongoDB Atlas.
+    """
+    event = get_object_or_404(Event, slug=slug)
+
+    if request.method != 'POST':
+        return redirect('event_detail', slug=event.slug)
+
+    if event.coordinator == request.user:
+        messages.info(request, "You are already the Lead Coordinator of this event!")
+        return redirect('event_detail', slug=event.slug)
+
+    existing = EventCoordinatorTeam.objects.filter(event=event, user=request.user).first()
+    if existing:
+        if existing.status == 'APPROVED':
+            messages.info(request, f"You are already an active {existing.get_role_display()} on this event team!")
+        elif existing.status == 'PENDING':
+            messages.warning(request, f"Your request to join as {existing.get_role_display()} is already pending review from the Lead Coordinator.")
+        else:
+            role = request.POST.get('role', 'CO_COORDINATOR')
+            pitch_note = request.POST.get('pitch_note', '').strip()
+            existing.role = role
+            existing.pitch_note = pitch_note
+            existing.status = 'PENDING'
+            existing.save()
+            mongo_sync_event_team(existing)
+            messages.success(request, f"Your re-application to join as {existing.get_role_display()} has been submitted!")
+        return redirect('event_detail', slug=event.slug)
+
+    role = request.POST.get('role', 'CO_COORDINATOR')
+    pitch_note = request.POST.get('pitch_note', '').strip()
+
+    membership = EventCoordinatorTeam.objects.create(
+        event=event,
+        user=request.user,
+        role=role,
+        pitch_note=pitch_note,
+        status='PENDING'
+    )
+    mongo_sync_event_team(membership)
+
+    lead_name = event.coordinator.get_full_name() or event.coordinator.username
+    messages.success(request, f"Request to join the Organizing Team for '{event.title}' submitted! {lead_name} will review your request.")
+    return redirect('event_detail', slug=event.slug)
+
+
+@login_required
+def coordinator_manage_team_request(request, membership_id, action):
+    """
+    Lead Coordinator or Admin approves or rejects a 'Join Event Team' request.
+    When approved, automatically grants coordinator portal access.
+    Synchronizes to MongoDB Atlas.
+    """
+    membership = get_object_or_404(EventCoordinatorTeam, id=membership_id)
+    event = membership.event
+
+    if not (event.coordinator == request.user or request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.is_admin)):
+        messages.error(request, "You do not have permission to manage this event team.")
+        return redirect('coordinator_dashboard')
+
+    applicant_name = membership.user.get_full_name() or membership.user.username
+
+    if action == 'APPROVE':
+        membership.status = 'APPROVED'
+        membership.approved_by = request.user
+        membership.save()
+
+        # Ensure applicant profile can access coordinator portal
+        profile = getattr(membership.user, 'profile', None)
+        if profile and profile.role == 'STUDENT':
+            profile.role = 'COORDINATOR'
+            profile.save()
+            mongo_sync_user(membership.user, profile)
+
+        mongo_sync_event_team(membership)
+        messages.success(request, f"Approved {applicant_name} as {membership.get_role_display()} for '{event.title}'! They now have team access.")
+
+    elif action == 'REJECT':
+        membership.status = 'REJECTED'
+        membership.save()
+        mongo_sync_event_team(membership)
+        messages.info(request, f"Request from {applicant_name} was rejected.")
+
+    return redirect('coordinator_manage_event', slug=event.slug)
+
+
+@login_required
+def coordinator_update_team_role(request, membership_id):
+    """
+    Lead Coordinator or Admin re-assigns responsibilities in the organizing team.
+    """
+    if request.method != 'POST':
+        return redirect('coordinator_dashboard')
+
+    membership = get_object_or_404(EventCoordinatorTeam, id=membership_id)
+    event = membership.event
+
+    if not (event.coordinator == request.user or request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.is_admin)):
+        messages.error(request, "You do not have permission to modify roles on this event team.")
+        return redirect('coordinator_dashboard')
+
+    if membership.role == 'LEAD' and membership.user == event.coordinator:
+        messages.warning(request, "The event creator cannot be demoted from Lead Coordinator.")
+        return redirect('coordinator_manage_event', slug=event.slug)
+
+    new_role = request.POST.get('role')
+    custom_role = request.POST.get('custom_role', '').strip()
+
+    if new_role:
+        membership.role = new_role
+        membership.custom_role = custom_role
+        membership.save()
+        mongo_sync_event_team(membership)
+        member_name = membership.user.get_full_name() or membership.user.username
+        messages.success(request, f"Updated role for {member_name} to {membership.get_role_display()}!")
+
+    return redirect('coordinator_manage_event', slug=event.slug)
+
+
+@login_required
+def coordinator_remove_team_member(request, membership_id):
+    """
+    Lead Coordinator or Admin removes a member from the organizing team.
+    """
+    membership = get_object_or_404(EventCoordinatorTeam, id=membership_id)
+    event = membership.event
+
+    if not (event.coordinator == request.user or request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.is_admin)):
+        messages.error(request, "You do not have permission to remove team members.")
+        return redirect('coordinator_dashboard')
+
+    if membership.role == 'LEAD' or membership.user == event.coordinator:
+        messages.error(request, "Cannot remove the Lead Coordinator / Event Creator.")
+        return redirect('coordinator_manage_event', slug=event.slug)
+
+    member_name = membership.user.get_full_name() or membership.user.username
+    membership.delete()
+
+    db = get_mongo_db()
+    if db is not None:
+        try:
+            db['event_teams'].delete_one({'event_slug': event.slug, 'username': membership.user.username})
+        except Exception:
+            pass
+
+    messages.info(request, f"Removed {member_name} from the '{event.title}' organizing team.")
+    return redirect('coordinator_manage_event', slug=event.slug)
+
+
+@login_required
 @user_passes_test(is_coordinator_or_admin)
 def coordinator_manage_event(request, slug):
     """
     Detailed management for an event:
-    Attendee roster, manual check-in toggle, announcement sender, Q&A replies.
-    Synchronizes announcements and Q&A to MongoDB Atlas.
+    Attendee roster, manual check-in toggle, announcement sender, Q&A replies,
+    and Organizing Team delegation & join request approvals.
     """
     event = get_object_or_404(Event, slug=slug)
 
-    # Check permission
-    if not (request.user.is_superuser or event.coordinator == request.user or (hasattr(request.user, 'profile') and request.user.profile.is_admin)):
+    # Permission check: Lead Coordinator, Approved Team Member, or Admin
+    if not event.is_user_coordinator(request.user):
         messages.error(request, "You do not have permission to manage this event.")
         return redirect('coordinator_dashboard')
+
+    is_lead = (event.coordinator == request.user or request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.is_admin))
+    user_team_membership = event.get_user_team_membership(request.user)
 
     # Post announcement
     if request.method == 'POST' and 'post_announcement' in request.POST:
@@ -620,7 +828,6 @@ def coordinator_manage_event(request, slug):
                 posted_by=request.user,
                 is_urgent=is_urgent
             )
-            # Sync to MongoDB Atlas 'announcements'
             mongo_sync_announcement(announcement)
             messages.success(request, "Announcement published successfully!")
             return redirect('coordinator_manage_event', slug=event.slug)
@@ -635,7 +842,6 @@ def coordinator_manage_event(request, slug):
             question.answered_by = request.user
             question.answered_at = timezone.now()
             question.save()
-            # Sync to MongoDB Atlas 'event_questions'
             mongo_sync_question(question)
             messages.success(request, "Question answered successfully!")
             return redirect('coordinator_manage_event', slug=event.slug)
@@ -650,12 +856,18 @@ def coordinator_manage_event(request, slug):
 
     questions = event.questions.select_related('student', 'answered_by')
     announcements = event.announcements.all()
+    approved_team = event.get_approved_team()
+    pending_team_requests = event.get_pending_team_requests() if is_lead else []
 
     context = {
         'event': event,
         'registrations': registrations,
         'questions': questions,
         'announcements': announcements,
+        'approved_team': approved_team,
+        'pending_team_requests': pending_team_requests,
+        'is_lead': is_lead,
+        'user_team_membership': user_team_membership,
         'reg_filter': reg_filter,
     }
     return render(request, 'events/coordinator_manage_event.html', context)
@@ -669,6 +881,10 @@ def coordinator_toggle_checkin(request, reg_id):
     Synchronizes attendance to MongoDB Atlas 'attendance' collection.
     """
     registration = get_object_or_404(Registration, id=reg_id)
+    if not registration.event.is_user_coordinator(request.user):
+        messages.error(request, "You do not have permission to check in attendees for this event.")
+        return redirect('coordinator_dashboard')
+
     registration.is_checked_in = not registration.is_checked_in
     if registration.is_checked_in:
         registration.checked_in_at = timezone.now()
@@ -691,15 +907,23 @@ def coordinator_toggle_checkin(request, reg_id):
 def coordinator_scanner(request, slug):
     """
     Live QR Attendance Scanner:
-    Features in-browser camera scanner (html5-qrcode) and manual code lookup.
-    Instantly verifies registration token and marks attendance.
+    Accessible by Lead Coordinator and all Approved Organizing Team Members.
+    Multiple coordinators can scan simultaneously without duplicate check-ins.
     """
     event = get_object_or_404(Event, slug=slug)
 
+    if not event.is_user_coordinator(request.user):
+        messages.error(request, "You do not have permission to scan tickets for this event.")
+        return redirect('coordinator_dashboard')
+
+    membership = event.get_user_team_membership(request.user)
+
     context = {
         'event': event,
+        'membership': membership,
     }
     return render(request, 'events/coordinator_scanner.html', context)
+
 
 
 @login_required

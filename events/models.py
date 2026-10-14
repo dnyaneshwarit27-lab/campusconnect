@@ -134,6 +134,41 @@ class Event(models.Model):
         if not self.coordinator_email and self.coordinator:
             self.coordinator_email = self.coordinator.email
         super().save(*args, **kwargs)
+        if self.coordinator:
+            try:
+                from django.apps import apps
+                TeamModel = apps.get_model('events', 'EventCoordinatorTeam')
+                if TeamModel:
+                    TeamModel.objects.get_or_create(
+                        event=self,
+                        user=self.coordinator,
+                        defaults={'role': 'LEAD', 'status': 'APPROVED'}
+                    )
+            except Exception:
+                pass
+
+    def is_user_coordinator(self, user):
+        if not user or not user.is_authenticated:
+            return False
+        if user.is_superuser or (hasattr(user, 'profile') and user.profile.is_admin):
+            return True
+        if self.coordinator == user:
+            return True
+        return self.coordinator_team.filter(user=user, status='APPROVED').exists()
+
+    def get_lead_coordinator(self):
+        return self.coordinator
+
+    def get_approved_team(self):
+        return self.coordinator_team.filter(status='APPROVED').select_related('user', 'user__profile')
+
+    def get_pending_team_requests(self):
+        return self.coordinator_team.filter(status='PENDING').select_related('user', 'user__profile')
+
+    def get_user_team_membership(self, user):
+        if not user or not user.is_authenticated:
+            return None
+        return self.coordinator_team.filter(user=user).first()
 
     @property
     def confirmed_registrations_count(self):
@@ -280,4 +315,40 @@ class TeamCollaborationRequest(models.Model):
 
     def __str__(self):
         return f"Collab Request from {self.sender.username} on '{self.post.title}'"
+
+
+class EventCoordinatorTeam(models.Model):
+    ROLE_CHOICES = [
+        ('LEAD', 'Lead Coordinator'),
+        ('CO_COORDINATOR', 'Co-Coordinator'),
+        ('ATTENDANCE', 'Attendance & QR Scanner In-Charge'),
+        ('COMMUNICATIONS', 'Q&A & Announcements In-Charge'),
+        ('VOLUNTEER', 'Event Volunteer / Operations'),
+    ]
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending Approval'),
+        ('APPROVED', 'Approved (Active)'),
+        ('REJECTED', 'Rejected'),
+    ]
+
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='coordinator_team')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='event_coordinations')
+    role = models.CharField(max_length=30, choices=ROLE_CHOICES, default='CO_COORDINATOR')
+    custom_role = models.CharField(max_length=100, blank=True, help_text="e.g. Lead Judge, Logistics, Stage Coordinator")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    pitch_note = models.TextField(blank=True, help_text="Why you want to join and what responsibility you will handle")
+    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_event_coordinators')
+    joined_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('event', 'user')
+        ordering = ['-role', 'joined_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_role_display()} for {self.event.title} ({self.status})"
+
+    @property
+    def is_lead(self):
+        return self.role == 'LEAD'
 

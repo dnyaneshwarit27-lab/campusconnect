@@ -10,6 +10,7 @@ from .models import (
     TeamFinderPost,
     EventFeedback,
     TeamCollaborationRequest,
+    EventCoordinatorTeam,
 )
 
 
@@ -80,4 +81,12 @@ class TeamCollaborationRequestAdmin(admin.ModelAdmin):
     list_display = ('post', 'sender', 'sender_contact', 'status', 'created_at')
     list_filter = ('status', 'created_at')
     search_fields = ('post__title', 'sender__username', 'sender_contact', 'message')
+
+
+@admin.register(EventCoordinatorTeam)
+class EventCoordinatorTeamAdmin(admin.ModelAdmin):
+    list_display = ('event', 'user', 'role', 'status', 'joined_at')
+    list_filter = ('role', 'status', 'event')
+    search_fields = ('event__title', 'user__username', 'user__email', 'custom_role', 'pitch_note')
+
 

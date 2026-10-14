@@ -29,6 +29,13 @@ urlpatterns = [
     path('coordinator/scanner/<slug:slug>/', views.coordinator_scanner, name='coordinator_scanner'),
     path('coordinator/export/<slug:slug>/', views.coordinator_export_attendees, name='coordinator_export_attendees'),
     
+    # Event Team Self-Service & Delegation
+    path('event/<slug:slug>/join-team/', views.event_join_team, name='event_join_team'),
+    path('coordinator/team-request/<int:membership_id>/<str:action>/', views.coordinator_manage_team_request, name='coordinator_manage_team_request'),
+    path('coordinator/team-role/<int:membership_id>/', views.coordinator_update_team_role, name='coordinator_update_team_role'),
+    path('coordinator/team-remove/<int:membership_id>/', views.coordinator_remove_team_member, name='coordinator_remove_team_member'),
+
+    
     # AJAX Scanner API
     path('api/scan-ticket/', views.api_scan_ticket, name='api_scan_ticket'),
     

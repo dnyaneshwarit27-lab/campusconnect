@@ -19,6 +19,15 @@
                 <i class="bi bi-qr-code-scan text-primary me-2"></i> Live Attendance QR Scanner
             </h2>
             <p class="text-white-50 small mb-0">{{ event.title }} · {{ event.venue }}</p>
+            <div class="mt-1 d-flex flex-wrap align-items-center gap-2">
+                <span class="badge bg-primary bg-opacity-20 text-white-50 small border border-primary border-opacity-30">
+                    <i class="bi bi-person-badge me-1 text-info"></i> Scanner: <strong>{{ user.get_full_name|default:user.username }}</strong> 
+                    ({% if event.coordinator == user %}Lead Coordinator{% else %}{{ membership.get_role_display|default:'Team Coordinator' }}{% endif %})
+                </span>
+                <span class="badge bg-success bg-opacity-15 text-success small border border-success border-opacity-30">
+                    <i class="bi bi-shield-check me-1"></i> Multi-Scanner Duplicate Protection Active
+                </span>
+            </div>
         </div>
 
         <div class="d-flex align-items-center gap-3">

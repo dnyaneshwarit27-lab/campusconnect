@@ -130,6 +130,10 @@ def feedback_col():
     return get_collection('feedback')
 
 
+def event_teams_col():
+    return get_collection('event_teams')
+
+
 # ==========================================
 # Real Data Persistence & Sync Methods
 # ==========================================
@@ -378,9 +382,44 @@ def mongo_sync_announcement(announcement):
         return False
 
 
+def mongo_sync_event_team(team_member):
+    """
+    Inserts/updates event coordinator team member in MongoDB Atlas 'event_teams' collection.
+    """
+    col = event_teams_col()
+    if col is None:
+        return False
+
+    try:
+        doc = {
+            'django_team_id': team_member.id,
+            'event_slug': team_member.event.slug,
+            'event_title': team_member.event.title,
+            'username': team_member.user.username,
+            'full_name': team_member.user.get_full_name() or team_member.user.username,
+            'email': team_member.user.email,
+            'role': team_member.role,
+            'role_display': team_member.get_role_display(),
+            'custom_role': team_member.custom_role,
+            'status': team_member.status,
+            'pitch_note': team_member.pitch_note,
+            'joined_at': team_member.joined_at.isoformat() if team_member.joined_at else timezone.now().isoformat(),
+            'updated_at': timezone.now().isoformat()
+        }
+        col.update_one(
+            {'event_slug': team_member.event.slug, 'username': team_member.user.username},
+            {'$set': doc},
+            upsert=True
+        )
+        return True
+    except Exception as e:
+        logger.error(f"Error syncing event team to MongoDB Atlas: {e}")
+        return False
+
+
 def get_atlas_collection_counts():
     """
-    Returns actual document counts for all 8 collections in MongoDB Atlas.
+    Returns actual document counts for all 9 collections in MongoDB Atlas.
     """
     counts = {
         'users': 0,
@@ -391,6 +430,7 @@ def get_atlas_collection_counts():
         'attendance': 0,
         'announcements': 0,
         'feedback': 0,
+        'event_teams': 0,
     }
 
     db = get_mongo_db()
