@@ -121,14 +121,14 @@
                                 {% endif %}
                                 <td>
                                     {% if reg.is_checked_in %}
-                                        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-40">
+                                        <span class="badge-status-accepted">
                                             <i class="bi bi-check-circle-fill me-1"></i> Checked In
                                         </span>
                                         <div class="text-white-50 small mt-1" style="font-size: 0.72rem;">
                                             {{ reg.checked_in_at|date:"g:i A" }}
                                         </div>
                                     {% else %}
-                                        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-40">
+                                        <span class="badge-status-pending">
                                             <i class="bi bi-hourglass-split me-1"></i> Pending
                                         </span>
                                     {% endif %}

@@ -638,3 +638,14 @@ h1, h2, h3, h4, h5, h6, .brand-font {
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 
+/* Universal protection: Never allow yellow text on solid yellow background */
+.badge.bg-warning,
+span.bg-warning,
+.bg-warning.text-warning {
+    background: rgba(245, 158, 11, 0.16) !important;
+    border: 1px solid rgba(245, 158, 11, 0.45) !important;
+    color: #fbbf24 !important;
+    font-weight: 700 !important;
+}
+
+

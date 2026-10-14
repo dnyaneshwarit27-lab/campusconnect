@@ -28,11 +28,11 @@
                                 {{ reg.event.category.name }}
                             </span>
                             {% if reg.is_checked_in %}
-                                <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-40">
+                                <span class="badge-status-accepted">
                                     <i class="bi bi-patch-check-fill me-1"></i> Checked In
                                 </span>
                             {% else %}
-                                <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-40">
+                                <span class="badge-status-pending">
                                     <i class="bi bi-hourglass-split me-1"></i> Pass Ready
                                 </span>
                             {% endif %}
