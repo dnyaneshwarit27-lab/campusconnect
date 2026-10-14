@@ -584,3 +584,57 @@ h1, h2, h3, h4, h5, h6, .brand-font {
         border-color: #000 !important;
     }
 }
+
+/* High-Contrast Badges & Status Indicators */
+.badge-status-pending {
+    background: rgba(245, 158, 11, 0.16) !important;
+    border: 1px solid rgba(245, 158, 11, 0.5) !important;
+    color: #fbbf24 !important;
+    font-weight: 700 !important;
+    padding: 5px 12px !important;
+    border-radius: 9999px !important;
+    font-size: 0.76rem !important;
+    letter-spacing: 0.03em !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.badge-status-accepted {
+    background: rgba(16, 185, 129, 0.16) !important;
+    border: 1px solid rgba(16, 185, 129, 0.5) !important;
+    color: #34d399 !important;
+    font-weight: 700 !important;
+    padding: 5px 12px !important;
+    border-radius: 9999px !important;
+    font-size: 0.76rem !important;
+    letter-spacing: 0.03em !important;
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+.badge-status-declined {
+    background: rgba(239, 68, 68, 0.16) !important;
+    border: 1px solid rgba(239, 68, 68, 0.5) !important;
+    color: #f87171 !important;
+    font-weight: 700 !important;
+    padding: 5px 12px !important;
+    border-radius: 9999px !important;
+    font-size: 0.76rem !important;
+    letter-spacing: 0.03em !important;
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+.badge-looking-for {
+    background: rgba(245, 158, 11, 0.15) !important;
+    border: 1px solid rgba(245, 158, 11, 0.45) !important;
+    color: #fbbf24 !important;
+    font-weight: 700 !important;
+    padding: 4px 10px !important;
+    border-radius: 6px !important;
+    font-size: 0.78rem !important;
+    display: inline-block !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+

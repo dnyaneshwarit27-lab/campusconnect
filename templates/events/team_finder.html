@@ -80,7 +80,7 @@
                             </div>
                             <div>
                                 <span class="text-white-50 small d-block mb-1" style="font-size: 0.72rem;">LOOKING FOR:</span>
-                                <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30 fw-semibold">
+                                <span class="badge-looking-for">
                                     {{ post.skills_needed }}
                                 </span>
                             </div>
@@ -141,35 +141,24 @@
                                         <span class="text-primary small fw-semibold">
                                             <i class="bi bi-trophy-fill me-1"></i> {{ post.event.title|default:'General Hackathon' }}
                                         </span>
-                                        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30">
-                                            Looking for: {{ post.skills_needed }}
+                                        <span class="badge-looking-for">
+                                            <i class="bi bi-search me-1"></i> Looking for: {{ post.skills_needed }}
                                         </span>
                                     </div>
                                     <div class="text-white small fw-bold">{{ post.title }}</div>
                                 </div>
 
-                                <!-- Fast Reach Out Channels -->
-                                <div class="mb-3">
-                                    <label class="form-label text-white-50 small fw-bold text-uppercase" style="font-size: 0.72rem;">Direct Contact Channels</label>
-                                    <div class="d-flex flex-column gap-2">
-                                        {% if post.user.email %}
-                                            <a href="mailto:{{ post.user.email }}?subject=CampusConnect:%20Team%20Collaboration%20for%20{{ post.title|urlencode }}&body=Hi%20{{ post.user.first_name }},%20I%20saw%20your%20teammate%20post%20on%20CampusConnect%20and%20would%20love%20to%20collaborate!" 
-                                               class="btn btn-sm btn-glass text-info text-start d-flex align-items-center justify-content-between py-2 px-3">
-                                                <span><i class="bi bi-envelope-fill me-2"></i> Send Direct Email</span>
-                                                <span class="small text-white-50">{{ post.user.email }}</span>
-                                            </a>
-                                        {% endif %}
-                                        <div class="d-flex align-items-center justify-content-between p-2 px-3 rounded-3 bg-dark bg-opacity-50 border border-secondary border-opacity-20">
-                                            <div class="small text-truncate me-2">
-                                                <span class="text-white-50 me-1"><i class="bi bi-chat-quote-fill text-primary me-1"></i> Handle:</span>
-                                                <span class="text-white fw-semibold">{{ post.contact_handle }}</span>
-                                            </div>
-                                            <button type="button" class="btn btn-sm btn-glass text-warning py-1 px-2 flex-shrink-0" onclick="copyContactHandle('{{ post.contact_handle|escapejs }}', this)">
-                                                <i class="bi bi-clipboard me-1"></i> Copy
-                                            </button>
-                                        </div>
+                                <!-- Direct Contact Channel -->
+                                {% if post.user.email %}
+                                    <div class="mb-3">
+                                        <label class="form-label text-white-50 small fw-bold text-uppercase" style="font-size: 0.72rem;">Direct Email</label>
+                                        <a href="mailto:{{ post.user.email }}?subject=CampusConnect:%20Team%20Collaboration%20for%20{{ post.title|urlencode }}&body=Hi%20{{ post.user.first_name }},%20I%20saw%20your%20teammate%20post%20on%20CampusConnect%20and%20would%20love%20to%20collaborate!" 
+                                           class="btn btn-primary-custom w-100 text-start d-flex align-items-center justify-content-between py-2 px-3">
+                                            <span><i class="bi bi-envelope-fill me-2"></i> Send Direct Email</span>
+                                            <span class="small opacity-75">{{ post.user.email }}</span>
+                                        </a>
                                     </div>
-                                </div>
+                                {% endif %}
 
                                 <hr class="border-secondary border-opacity-20 my-3">
 
@@ -243,11 +232,11 @@
                                                         </div>
                                                         <div>
                                                             {% if req.status == 'ACCEPTED' %}
-                                                                <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30">Accepted</span>
+                                                                <span class="badge-status-accepted"><i class="bi bi-check-circle-fill me-1"></i> Accepted</span>
                                                             {% elif req.status == 'DECLINED' %}
-                                                                <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-30">Declined</span>
+                                                                <span class="badge-status-declined"><i class="bi bi-x-circle-fill me-1"></i> Declined</span>
                                                             {% else %}
-                                                                <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30">Pending</span>
+                                                                <span class="badge-status-pending"><i class="bi bi-clock-fill me-1"></i> Pending</span>
                                                             {% endif %}
                                                         </div>
                                                     </div>
@@ -373,24 +362,4 @@
 </div>
 {% endblock %}
 
-{% block extra_scripts %}
-<script>
-function copyContactHandle(text, btn) {
-    if (!text) return;
-    navigator.clipboard.writeText(text).then(() => {
-        const originalHtml = btn.innerHTML;
-        btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Copied to Clipboard!';
-        btn.classList.remove('btn-glass', 'text-warning');
-        btn.classList.add('btn-success', 'text-white');
-        setTimeout(() => {
-            btn.innerHTML = originalHtml;
-            btn.classList.remove('btn-success', 'text-white');
-            btn.classList.add('btn-glass', 'text-warning');
-        }, 2200);
-    }).catch(err => {
-        console.error('Failed to copy handle:', err);
-    });
-}
-</script>
-{% endblock %}
 
