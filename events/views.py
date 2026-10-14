@@ -467,6 +467,20 @@ def team_connect(request, post_id):
         profile = getattr(request.user, 'profile', None)
         sender_contact = request.user.email or (profile.phone if profile and profile.phone else '') or request.user.username
 
+    recipient_name = post.user.get_full_name() or post.user.username
+
+    # If applicant already has an existing collaboration thread with this leader, continue in existing thread!
+    existing_req = TeamCollaborationRequest.objects.filter(post=post, sender=request.user).first()
+    if existing_req:
+        chat_msg = TeamCollabChatMessage.objects.create(
+            collab_request=existing_req,
+            sender=request.user,
+            message=message
+        )
+        mongo_sync_collab_chat(chat_msg)
+        messages.success(request, f"Message sent to {recipient_name} in your existing discussion thread!")
+        return redirect('team_finder')
+
     req = TeamCollaborationRequest.objects.create(
         post=post,
         sender=request.user,
