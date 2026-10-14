@@ -14,15 +14,24 @@
             <p class="text-white-50 small mb-0">Missing a designer, backend wizard, or ML engineer? Connect with passionate students and form winning teams.</p>
         </div>
 
-        {% if user.is_authenticated %}
-            <button class="btn btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createPostModal">
-                <i class="bi bi-plus-circle me-1"></i> Post Team Request
-            </button>
-        {% else %}
-            <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary-custom">
-                <i class="bi bi-box-arrow-in-right me-1"></i> Log In to Post
-            </a>
-        {% endif %}
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            {% if user.is_authenticated and my_sent_requests %}
+                <button class="btn btn-glass" data-bs-toggle="modal" data-bs-target="#mySentRequestsModal">
+                    <i class="bi bi-send-check text-info me-1"></i> My Sent Pitches
+                    <span class="badge bg-primary rounded-pill ms-1">{{ my_sent_requests|length }}</span>
+                </button>
+            {% endif %}
+
+            {% if user.is_authenticated %}
+                <button class="btn btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createPostModal">
+                    <i class="bi bi-plus-circle me-1"></i> Post Team Request
+                </button>
+            {% else %}
+                <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary-custom">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Log In to Post
+                </a>
+            {% endif %}
+        </div>
     </div>
 
     <!-- Search / Filter by Skill -->
@@ -55,13 +64,19 @@
                         <!-- Top Ribbon -->
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             {% if post.event %}
-                                <span class="badge bg-primary bg-opacity-20 text-white-50 border border-primary border-opacity-30 small text-truncate" style="max-width: 190px;">
+                                <span class="badge bg-primary bg-opacity-20 text-white-50 border border-primary border-opacity-30 small text-truncate" style="max-width: 170px;">
                                     <i class="bi bi-trophy me-1"></i> {{ post.event.title }}
                                 </span>
                             {% else %}
                                 <span class="badge bg-secondary bg-opacity-20 text-white-50 small">General Team Search</span>
                             {% endif %}
-                            <span class="text-success small fw-semibold"><i class="bi bi-check-circle-fill me-1"></i> Open</span>
+                            <div>
+                                {% if post.is_open %}
+                                    <span class="badge-status-accepted small fw-semibold"><i class="bi bi-check-circle-fill me-1"></i> Open</span>
+                                {% else %}
+                                    <span class="badge-status-declined small fw-semibold"><i class="bi bi-people-fill me-1"></i> Team Formed</span>
+                                {% endif %}
+                            </div>
                         </div>
 
                         <!-- Post Title -->
@@ -94,24 +109,50 @@
                                          style="width: 34px; height: 34px; background: {{ post.user.profile.avatar_color|default:'#6366f1' }};">
                                         {{ post.user.first_name|default:post.user.username|slice:":1"|upper }}
                                     </div>
-                                    <div class="small text-truncate" style="max-width: 150px;">
+                                    <div class="small text-truncate" style="max-width: 140px;">
                                         <div class="text-white fw-semibold text-truncate">{{ post.user.get_full_name|default:post.user.username }}</div>
                                         <div class="text-white-50" style="font-size: 0.7rem;">{{ post.created_at|timesince }} ago</div>
                                     </div>
                                 </div>
                                 
-                                {% if user.is_authenticated and post.user == user %}
-                                    <button class="btn btn-sm btn-outline-info py-1 px-3 rounded-pill" data-bs-toggle="modal" data-bs-target="#inboxModal{{ post.id }}">
-                                        <i class="bi bi-inbox-fill me-1"></i> Responses 
-                                        {% if post.collaboration_requests.count > 0 %}
-                                            <span class="badge bg-info text-dark rounded-pill ms-1">{{ post.collaboration_requests.count }}</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    {% if user.is_authenticated and post.user == user %}
+                                        <button class="btn btn-sm btn-outline-info py-1 px-3 rounded-pill" data-bs-toggle="modal" data-bs-target="#inboxModal{{ post.id }}" title="View In-App Responses">
+                                            <i class="bi bi-inbox-fill me-1"></i> Responses 
+                                            {% if post.collaboration_requests.count > 0 %}
+                                                <span class="badge bg-info text-dark rounded-pill ms-1">{{ post.collaboration_requests.count }}</span>
+                                            {% endif %}
+                                        </button>
+                                        <a href="{% url 'team_post_delete' post.id %}" 
+                                           class="btn btn-sm btn-outline-danger py-1 px-2 rounded-circle" 
+                                           onclick="return confirm('Are you sure you want to delete your post: &quot;{{ post.title }}&quot;? All received pitches will also be removed.');" 
+                                           title="Delete this Post">
+                                            <i class="bi bi-trash3"></i>
+                                        </a>
+                                    {% elif post.my_request %}
+                                        {% if post.my_request.status == 'ACCEPTED' %}
+                                            <button class="btn btn-sm btn-accepted-glow py-1 px-3 rounded-pill" data-bs-toggle="modal" data-bs-target="#myRequestStatusModal{{ post.id }}">
+                                                <i class="bi bi-check-circle-fill me-1"></i> Accepted!
+                                            </button>
+                                        {% elif post.my_request.status == 'DECLINED' %}
+                                            <button class="btn btn-sm btn-outline-secondary py-1 px-3 rounded-pill" data-bs-toggle="modal" data-bs-target="#myRequestStatusModal{{ post.id }}">
+                                                <i class="bi bi-x-circle me-1"></i> Declined
+                                            </button>
+                                        {% else %}
+                                            <button class="btn btn-sm btn-pending-glow py-1 px-3 rounded-pill" data-bs-toggle="modal" data-bs-target="#myRequestStatusModal{{ post.id }}">
+                                                <i class="bi bi-clock-history me-1"></i> Pitch Sent
+                                            </button>
                                         {% endif %}
-                                    </button>
-                                {% else %}
-                                    <button class="btn btn-sm btn-primary-custom py-1 px-3 rounded-pill" data-bs-toggle="modal" data-bs-target="#connectModal{{ post.id }}">
-                                        <i class="bi bi-chat-dots-fill me-1"></i> Connect
-                                    </button>
-                                {% endif %}
+                                    {% else %}
+                                        {% if post.is_open %}
+                                            <button class="btn btn-sm btn-primary-custom py-1 px-3 rounded-pill" data-bs-toggle="modal" data-bs-target="#connectModal{{ post.id }}">
+                                                <i class="bi bi-chat-dots-fill me-1"></i> Connect
+                                            </button>
+                                        {% else %}
+                                            <span class="badge bg-secondary bg-opacity-30 text-white-50 px-3 py-1 rounded-pill small">Team Full</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -199,20 +240,143 @@
                     </div>
                 </div>
 
+                <!-- Status Modal for post {{ post.id }} (for applicant who sent a pitch) -->
+                {% if post.my_request %}
+                    <div class="modal fade" id="myRequestStatusModal{{ post.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content glass-card border-secondary border-opacity-25" style="background: #0f172a;">
+                                <div class="modal-header border-secondary border-opacity-10">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" 
+                                             style="width: 40px; height: 40px; background: {{ post.user.profile.avatar_color|default:'#6366f1' }}; font-size: 1.1rem;">
+                                            {{ post.user.first_name|default:post.user.username|slice:":1"|upper }}
+                                        </div>
+                                        <div>
+                                            <h5 class="modal-title text-white fw-bold mb-0">Collaboration Pitch Status</h5>
+                                            <small class="text-white-50">Team Leader: {{ post.user.get_full_name|default:post.user.username }}</small>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    {% if post.my_request.status == 'ACCEPTED' %}
+                                        <!-- Accepted State -->
+                                        <div class="p-4 rounded-4 mb-3 text-center" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.08)); border: 1px solid rgba(16, 185, 129, 0.45);">
+                                            <div class="display-5 text-success mb-2">🎉</div>
+                                            <h5 class="text-white fw-bold mb-1">Congratulations! Your Pitch Was Accepted!</h5>
+                                            <p class="text-white-50 small mb-3">
+                                                <strong class="text-white">{{ post.user.get_full_name|default:post.user.username }}</strong> has accepted you into the team for:
+                                            </p>
+                                            <div class="p-2 rounded-3 bg-dark bg-opacity-70 border border-success border-opacity-30 mb-3 text-white fw-semibold small">
+                                                {{ post.title }}
+                                            </div>
+
+                                            <div class="text-start p-3 rounded-3 bg-black bg-opacity-40 border border-secondary border-opacity-20 mb-3">
+                                                <div class="text-white-50 small mb-1"><i class="bi bi-person-check-fill text-success me-1"></i> Team Leader Contact Details:</div>
+                                                <div class="text-white fw-bold mb-1">{{ post.user.get_full_name|default:post.user.username }}</div>
+                                                <div class="text-info small mb-2"><i class="bi bi-envelope-fill me-1"></i> {{ post.contact_handle|default:post.user.email }}</div>
+                                                <div class="text-white-50 small"><i class="bi bi-geo-alt-fill text-primary me-1"></i> {{ post.user.profile.college|default:'Campus' }} · {{ post.user.profile.department|default:'Engineering' }}</div>
+                                            </div>
+
+                                            <a href="mailto:{{ post.contact_handle|default:post.user.email }}?subject=CampusConnect: Teaming up for {{ post.title|urlencode }}&body=Hi {{ post.user.first_name|default:post.user.username }}, thanks for accepting my pitch on CampusConnect! Looking forward to building together. Let's discuss our next steps." 
+                                               class="btn btn-success w-100 py-2 fw-bold shadow-sm">
+                                                <i class="bi bi-envelope-fill me-2"></i> Send Direct Email to {{ post.user.first_name|default:post.user.username }}
+                                            </a>
+                                        </div>
+                                    {% elif post.my_request.status == 'DECLINED' %}
+                                        <!-- Declined State -->
+                                        <div class="p-4 rounded-4 mb-3 text-center" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);">
+                                            <div class="display-6 text-danger mb-2"><i class="bi bi-x-circle-fill"></i></div>
+                                            <h5 class="text-white fw-bold mb-1">Collaboration Request Closed</h5>
+                                            <p class="text-white-50 small mb-0">
+                                                The team slots for <strong class="text-white">{{ post.title }}</strong> were already filled or the author could not accept new members at this time.
+                                            </p>
+                                        </div>
+                                    {% else %}
+                                        <!-- Pending State -->
+                                        <div class="p-4 rounded-4 mb-3 text-center" style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35);">
+                                            <div class="display-6 text-warning mb-2"><i class="bi bi-hourglass-split"></i></div>
+                                            <h5 class="text-white fw-bold mb-1">Pitch Sent & Under Review</h5>
+                                            <p class="text-white-50 small mb-3">
+                                                Your collaboration request has been delivered to <strong class="text-white">{{ post.user.get_full_name|default:post.user.username }}</strong>. They will review it soon!
+                                            </p>
+                                            {% if post.contact_handle or post.user.email %}
+                                                <div class="p-2 rounded bg-black bg-opacity-30 text-white-50 small">
+                                                    Need to reach them directly?
+                                                    <a href="mailto:{{ post.contact_handle|default:post.user.email }}" class="text-info fw-bold d-block mt-1">
+                                                        <i class="bi bi-envelope me-1"></i> {{ post.contact_handle|default:post.user.email }}
+                                                    </a>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+
+                                    <!-- Your Sent Pitch Recap -->
+                                    <div class="p-3 rounded-3 bg-dark bg-opacity-50 border border-secondary border-opacity-15">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="text-white-50 small fw-bold text-uppercase" style="font-size: 0.72rem;">Your Pitch Message</span>
+                                            <span class="text-white-50 small">{{ post.my_request.created_at|timesince }} ago</span>
+                                        </div>
+                                        <div class="p-2 rounded bg-black bg-opacity-40 text-white-50 small mb-2" style="line-height: 1.5;">
+                                            "{{ post.my_request.message }}"
+                                        </div>
+                                        <div class="text-white-50 small">
+                                            Provided Contact Email: <strong class="text-white">{{ post.my_request.sender_contact }}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer border-secondary border-opacity-10">
+                                    <button type="button" class="btn btn-glass" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
                 <!-- Inbox Modal for post owner {{ post.id }} -->
                 {% if user.is_authenticated and post.user == user %}
                     <div class="modal fade" id="inboxModal{{ post.id }}" tabindex="-1" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered modal-lg">
                             <div class="modal-content glass-card border-secondary border-opacity-25" style="background: #0f172a;">
                                 <div class="modal-header border-secondary border-opacity-10">
-                                    <h5 class="modal-title text-white fw-bold">
-                                        <i class="bi bi-inbox-fill text-info me-2"></i> Collaboration Pitches ({{ post.collaboration_requests.count }})
-                                    </h5>
+                                    <div>
+                                        <h5 class="modal-title text-white fw-bold mb-0">
+                                            <i class="bi bi-inbox-fill text-info me-2"></i> Collaboration Pitches ({{ post.collaboration_requests.count }})
+                                        </h5>
+                                        <small class="text-white-50">Manage applicants & post status for: {{ post.title|truncatechars:40 }}</small>
+                                    </div>
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
                                 <div class="modal-body">
-                                    <div class="mb-3 p-2 rounded bg-dark bg-opacity-40 border border-secondary border-opacity-10 small text-white-50">
-                                        Post: <strong class="text-white">{{ post.title }}</strong>
+                                    <!-- Post Management Actions Bar -->
+                                    <div class="p-3 rounded-3 bg-dark bg-opacity-60 border border-secondary border-opacity-20 mb-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                        <div>
+                                            <div class="text-white small fw-bold">{{ post.title }}</div>
+                                            <div class="d-flex align-items-center gap-2 mt-1">
+                                                <span class="text-white-50 small">Status:</span>
+                                                {% if post.is_open %}
+                                                    <span class="badge-status-accepted"><i class="bi bi-check-circle-fill me-1"></i> Open for Teammates</span>
+                                                {% else %}
+                                                    <span class="badge-status-declined"><i class="bi bi-people-fill me-1"></i> Team Formed (Closed)</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            {% if post.is_open %}
+                                                <a href="{% url 'team_post_toggle_status' post.id %}" class="btn btn-sm btn-outline-warning">
+                                                    <i class="bi bi-lock-fill me-1"></i> Mark Team Formed
+                                                </a>
+                                            {% else %}
+                                                <a href="{% url 'team_post_toggle_status' post.id %}" class="btn btn-sm btn-outline-success">
+                                                    <i class="bi bi-unlock-fill me-1"></i> Re-open Post
+                                                </a>
+                                            {% endif %}
+                                            <a href="{% url 'team_post_delete' post.id %}" 
+                                               class="btn btn-sm btn-outline-danger" 
+                                               onclick="return confirm('Are you sure you want to permanently delete this post? All collaboration responses will be removed.');">
+                                                <i class="bi bi-trash3 me-1"></i> Delete Post
+                                            </a>
+                                        </div>
                                     </div>
 
                                     {% if post.collaboration_requests.all %}
@@ -247,21 +411,27 @@
 
                                                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 small">
                                                         <div class="text-info">
-                                                            <i class="bi bi-person-lines-fill me-1"></i> Contact: <strong>{{ req.sender_contact }}</strong>
+                                                            <i class="bi bi-envelope-at me-1"></i> Contact: <strong>{{ req.sender_contact }}</strong>
                                                         </div>
-                                                        <div class="d-flex gap-2">
-                                                            {% if req.sender.email %}
-                                                                <a href="mailto:{{ req.sender.email }}?subject=Accepted:%20CampusConnect%20Team%20Collaboration&body=Hi%20{{ req.sender.first_name }},%20I'd%20love%20to%20team%20up%20with%20you!" 
-                                                                   class="btn btn-sm btn-glass text-info py-0 px-2">
-                                                                    <i class="bi bi-envelope"></i> Email
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            {% if req.status == 'ACCEPTED' %}
+                                                                <a href="mailto:{{ req.sender_contact }}?subject=CampusConnect: Welcome to the team for {{ post.title|urlencode }}!&body=Hi {{ req.sender.first_name|default:req.sender.username }}, I accepted your pitch on CampusConnect! Let's connect and build." 
+                                                                   class="btn btn-sm btn-success py-1 px-3 fw-semibold">
+                                                                    <i class="bi bi-envelope-fill me-1"></i> Email {{ req.sender.first_name|default:req.sender.username }}
                                                                 </a>
-                                                            {% endif %}
-                                                            {% if req.status == 'PENDING' %}
-                                                                <a href="{% url 'team_request_status' req.id 'ACCEPTED' %}" class="btn btn-sm btn-success py-0 px-2">
-                                                                    <i class="bi bi-check-lg"></i> Accept
+                                                                <a href="{% url 'team_request_status' req.id 'DECLINED' %}" class="btn btn-sm btn-outline-secondary py-1 px-2" title="Change to Declined">
+                                                                    Decline
                                                                 </a>
-                                                                <a href="{% url 'team_request_status' req.id 'DECLINED' %}" class="btn btn-sm btn-outline-danger py-0 px-2">
-                                                                    <i class="bi bi-x-lg"></i> Decline
+                                                            {% elif req.status == 'DECLINED' %}
+                                                                <a href="{% url 'team_request_status' req.id 'ACCEPTED' %}" class="btn btn-sm btn-outline-success py-1 px-2">
+                                                                    Re-Accept
+                                                                </a>
+                                                            {% else %}
+                                                                <a href="{% url 'team_request_status' req.id 'ACCEPTED' %}" class="btn btn-sm btn-success py-1 px-3 fw-semibold">
+                                                                    <i class="bi bi-check-lg me-1"></i> Accept Pitch
+                                                                </a>
+                                                                <a href="{% url 'team_request_status' req.id 'DECLINED' %}" class="btn btn-sm btn-outline-danger py-1 px-2">
+                                                                    <i class="bi bi-x-lg me-1"></i> Decline
                                                                 </a>
                                                             {% endif %}
                                                         </div>
@@ -275,6 +445,14 @@
                                             <p class="mb-0 small">No collaboration requests received yet. Teammates will appear here once they connect!</p>
                                         </div>
                                     {% endif %}
+                                </div>
+                                <div class="modal-footer border-secondary border-opacity-10 d-flex justify-content-between align-items-center">
+                                    <a href="{% url 'team_post_delete' post.id %}" 
+                                       class="btn btn-sm btn-outline-danger" 
+                                       onclick="return confirm('Are you sure you want to permanently delete this post?');">
+                                        <i class="bi bi-trash3 me-1"></i> Delete Post
+                                    </a>
+                                    <button type="button" class="btn btn-glass btn-sm" data-bs-dismiss="modal">Close</button>
                                 </div>
                             </div>
                         </div>
@@ -361,6 +539,90 @@
         </div>
     </div>
 </div>
+
+<!-- My Sent Pitches Modal (for applicant like dnyanu@) -->
+{% if user.is_authenticated %}
+    <div class="modal fade" id="mySentRequestsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content glass-card border-secondary border-opacity-25" style="background: #0f172a;">
+                <div class="modal-header border-secondary border-opacity-10">
+                    <div>
+                        <h5 class="modal-title text-white fw-bold mb-0">
+                            <i class="bi bi-send-check text-info me-2"></i> My Sent Collaboration Pitches
+                        </h5>
+                        <small class="text-white-50">Track all team requests you sent and get in touch with accepted team leaders</small>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    {% if my_sent_requests %}
+                        <div class="d-flex flex-column gap-3">
+                            {% for sent in my_sent_requests %}
+                                <div class="p-3 rounded-3 bg-dark bg-opacity-60 border {% if sent.status == 'ACCEPTED' %}border-success border-opacity-40{% elif sent.status == 'DECLINED' %}border-danger border-opacity-25{% else %}border-secondary border-opacity-20{% endif %}">
+                                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+                                        <div>
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <h6 class="text-white fw-bold mb-0">{{ sent.post.title }}</h6>
+                                                {% if sent.post.event %}
+                                                    <span class="badge bg-primary bg-opacity-20 text-white-50 small border border-primary border-opacity-30">
+                                                        <i class="bi bi-trophy me-1"></i> {{ sent.post.event.title }}
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="text-white-50 small">
+                                                Team Lead: <strong class="text-white">{{ sent.post.user.get_full_name|default:sent.post.user.username }}</strong> 
+                                                ({{ sent.post.user.profile.college|default:'Campus' }}) · Sent {{ sent.created_at|timesince }} ago
+                                            </div>
+                                        </div>
+                                        <div>
+                                            {% if sent.status == 'ACCEPTED' %}
+                                                <span class="badge-status-accepted"><i class="bi bi-check-circle-fill me-1"></i> Accepted!</span>
+                                            {% elif sent.status == 'DECLINED' %}
+                                                <span class="badge-status-declined"><i class="bi bi-x-circle-fill me-1"></i> Declined</span>
+                                            {% else %}
+                                                <span class="badge-status-pending"><i class="bi bi-clock-fill me-1"></i> Pending Review</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="p-2 rounded bg-black bg-opacity-30 text-white-50 small mb-2" style="line-height: 1.5;">
+                                        "{{ sent.message }}"
+                                    </div>
+
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 small pt-2 border-top border-secondary border-opacity-10">
+                                        <div class="text-white-50">
+                                            Your Contact Email: <strong class="text-white">{{ sent.sender_contact }}</strong>
+                                        </div>
+                                        <div>
+                                            {% if sent.status == 'ACCEPTED' %}
+                                                <a href="mailto:{{ sent.post.contact_handle|default:sent.post.user.email }}?subject=CampusConnect: Let's team up for {{ sent.post.title|urlencode }}&body=Hi {{ sent.post.user.first_name|default:sent.post.user.username }}, thanks for accepting my pitch on CampusConnect! Let's connect and start building." 
+                                                   class="btn btn-sm btn-success fw-bold py-1 px-3">
+                                                    <i class="bi bi-envelope-fill me-1"></i> Send Email to {{ sent.post.user.first_name|default:sent.post.user.username }}
+                                                </a>
+                                            {% elif sent.status == 'PENDING' %}
+                                                <span class="text-warning small"><i class="bi bi-hourglass-split me-1"></i> Awaiting leader response</span>
+                                            {% else %}
+                                                <span class="text-muted small">Slot unavailable</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4 text-white-50">
+                            <i class="bi bi-send display-6 d-block mb-2 text-white-50"></i>
+                            <p class="mb-0 small">You haven't sent any collaboration pitches yet. Browse available posts and click "Connect" to team up!</p>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer border-secondary border-opacity-10">
+                    <button type="button" class="btn btn-glass" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
 {% endblock %}
 
 

@@ -361,8 +361,16 @@ def team_finder(request):
     Hackathon Team Finder:
     Browse real student postings, connect with other students, or post a request for teammates.
     """
-    posts = TeamFinderPost.objects.filter(is_open=True).select_related('user', 'user__profile', 'event').prefetch_related('collaboration_requests', 'collaboration_requests__sender', 'collaboration_requests__sender__profile')
+    posts = TeamFinderPost.objects.all().select_related('user', 'user__profile', 'event').prefetch_related('collaboration_requests', 'collaboration_requests__sender', 'collaboration_requests__sender__profile')
     events = Event.objects.filter(is_published=True, is_team_event=True, end_date__gte=timezone.now())
+
+    # Build mapping of current user's sent pitches/requests
+    my_sent_requests = []
+    if request.user.is_authenticated:
+        my_sent_requests = list(TeamCollaborationRequest.objects.filter(sender=request.user).select_related('post', 'post__user', 'post__user__profile', 'post__event'))
+        sent_dict = {req.post_id: req for req in my_sent_requests}
+        for post in posts:
+            post.my_request = sent_dict.get(post.id)
 
     query = request.GET.get('q', '').strip()
     if query:
@@ -402,6 +410,7 @@ def team_finder(request):
         'posts': posts,
         'events': events,
         'query': query,
+        'my_sent_requests': my_sent_requests,
     }
     return render(request, 'events/team_finder.html', context)
 
@@ -476,8 +485,65 @@ def team_request_status(request, req_id, new_status):
     if new_status in ['ACCEPTED', 'DECLINED']:
         collab_req.status = new_status
         collab_req.save()
-        messages.success(request, f"Request from {collab_req.sender.get_full_name() or collab_req.sender.username} marked as {new_status.capitalize()}!")
+
+        # Update in MongoDB Atlas
+        db = get_mongo_db()
+        if db is not None:
+            try:
+                db['collaboration_requests'].update_one(
+                    {'post_id': collab_req.post.id, 'sender_username': collab_req.sender.username},
+                    {'$set': {'status': new_status, 'updated_at': timezone.now().isoformat()}}
+                )
+            except Exception as e:
+                pass
+
+        action_word = "accepted" if new_status == 'ACCEPTED' else "declined"
+        sender_name = collab_req.sender.get_full_name() or collab_req.sender.username
+        messages.success(request, f"You have {action_word} the collaboration request from {sender_name}!")
     return redirect('team_finder')
+
+
+@login_required
+def team_post_delete(request, post_id):
+    """
+    Allows post author (or admin) to delete their team finder post.
+    """
+    post = get_object_or_404(TeamFinderPost, id=post_id)
+    if not (post.user == request.user or request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.is_admin)):
+        messages.error(request, "You do not have permission to delete this post.")
+        return redirect('team_finder')
+
+    title = post.title
+    post.delete()
+
+    # Clean up from MongoDB Atlas
+    db = get_mongo_db()
+    if db is not None:
+        try:
+            db['collaboration_requests'].delete_many({'post_id': post_id})
+        except Exception as e:
+            pass
+
+    messages.success(request, f"Team post '{title}' has been successfully deleted.")
+    return redirect('team_finder')
+
+
+@login_required
+def team_post_toggle_status(request, post_id):
+    """
+    Author can mark post as Closed (Team Formed) or Re-open it.
+    """
+    post = get_object_or_404(TeamFinderPost, id=post_id)
+    if not (post.user == request.user or request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.is_admin)):
+        messages.error(request, "You do not have permission to modify this post.")
+        return redirect('team_finder')
+
+    post.is_open = not post.is_open
+    post.save()
+    status_label = "Open" if post.is_open else "Closed (Team Formed)"
+    messages.success(request, f"Post status updated to: {status_label}!")
+    return redirect('team_finder')
+
 
 
 

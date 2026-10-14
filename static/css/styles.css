@@ -648,4 +648,29 @@ span.bg-warning,
     font-weight: 700 !important;
 }
 
+.btn-accepted-glow {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.45)) !important;
+    border: 1px solid rgba(16, 185, 129, 0.7) !important;
+    color: #6ee7b7 !important;
+    font-weight: 700 !important;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.35);
+    transition: all 0.2s ease-in-out;
+}
+.btn-accepted-glow:hover {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.4), rgba(5, 150, 105, 0.6)) !important;
+    box-shadow: 0 0 18px rgba(16, 185, 129, 0.55);
+    color: #fff !important;
+}
+
+.btn-pending-glow {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(217, 119, 6, 0.32)) !important;
+    border: 1px solid rgba(245, 158, 11, 0.6) !important;
+    color: #fde68a !important;
+    font-weight: 600 !important;
+}
+.btn-pending-glow:hover {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.28), rgba(217, 119, 6, 0.45)) !important;
+    color: #fff !important;
+}
+
 
