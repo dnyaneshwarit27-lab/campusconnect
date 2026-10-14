@@ -7,7 +7,7 @@
     <!-- Header -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
-            <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-info bg-opacity-20 text-info border border-info border-opacity-30 small mb-2">
+            <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill small mb-2" style="background: rgba(14, 165, 233, 0.22) !important; border: 1px solid rgba(56, 189, 248, 0.65) !important; color: #38bdf8 !important; font-weight: 700 !important; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
                 <i class="bi bi-shield-lock-fill"></i> Coordinator Operations Portal
             </div>
             <h2 class="text-white fw-bold mb-1">Coordinator Desk</h2>
@@ -100,7 +100,9 @@
                                         {{ event.category.name }}
                                     </span>
                                     {% if event.is_team_event %}
-                                        <span class="badge-role-pill">Team Event</span>
+                                        <span class="badge-role-pill" style="background: rgba(14, 165, 233, 0.22) !important; border: 1px solid rgba(56, 189, 248, 0.65) !important; color: #38bdf8 !important; font-weight: 700 !important; font-size: 0.78rem; padding: 3px 9px; border-radius: 6px; display: inline-flex; align-items: center; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
+                                            <i class="bi bi-people-fill me-1"></i> Team Event
+                                        </span>
                                     {% endif %}
                                 </td>
                                 <td>
@@ -114,7 +116,7 @@
                                             </span>
                                         {% endif %}
                                     {% else %}
-                                        <span class="badge-role-pill">
+                                        <span class="badge-role-pill" style="background: rgba(14, 165, 233, 0.22) !important; border: 1px solid rgba(56, 189, 248, 0.65) !important; color: #38bdf8 !important; font-weight: 700 !important; font-size: 0.78rem; padding: 3px 9px; border-radius: 6px; display: inline-flex; align-items: center; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
                                             <i class="bi bi-person-check-fill me-1"></i> {{ event.my_role_label }}
                                         </span>
                                     {% endif %}
